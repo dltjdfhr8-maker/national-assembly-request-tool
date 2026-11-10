@@ -1,0 +1,8 @@
+[build]
+  command = "python build_site.py"
+  publish = "web"
+
+[[redirects]]
+  from = "/api/recommend"
+  to = "https://national-assembly-request-tool-six.vercel.app/api/recommend"
+  status = 200

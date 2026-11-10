@@ -4,6 +4,9 @@
 
 # Installed packages and generated caches
 node_modules/
+.netlify/
+.vercel/
+web/generated/
 __pycache__/
 *.py[cod]
 
