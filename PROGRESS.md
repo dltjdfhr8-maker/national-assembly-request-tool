@@ -31,12 +31,13 @@
 | 2026-11-10 | 서버 상태 규칙·Blob 저장 코드 | `web/flow.js`를 브라우저·서버 공통 상태 함수로 작성하고 기존 배분 화면의 접수·확정·취소에 연결. `api/app.js`의 GET/POST, `api/org.json`, `@vercel/blob` 의존성 및 `test_api.js` 가짜 저장소 시험 23개 작성. 브라우저에서 접수→배분확정→취소 확인 | 화면의 서버 저장 연결, S7 AI 추천, S8 보완요청·확정, 운영 인증·비공개 Blob 연결 | 현재 배포 화면은 localStorage를 쓰며, 서버 API는 인증 없이 공개 운영하면 자료가 노출될 수 있어 운영 배포를 하지 않음 |
 
 | 2026-11-10 | 서버·브라우저 저장 전환과 현업 회신 화면 | `web/common.js`가 `*.vercel.app`에서 `/api/app` GET/POST, 그 밖에서 브라우저 저장을 사용하도록 수정하고 세 화면 상단에 저장 위치를 표시. `web/dept.html`에서 내 과 문항만 표시, 회신 엑셀 1·2행 검사·행 점검·메모 제출·재배정 요청 구현. `web/data/접수대장.csv` 520건을 읽기 전용으로 복사해 1순위 근거 키워드로 이력 요약·최근 5건을 배분·현업 화면에 표시. 로컬 브라우저에서 접수→배분→현업 회신→재배정 요청→다시 배분과 Vercel 주소 모의 API GET/POST·오류 시 저장 방식 유지 확인 | S7 AI 추천, S8 보완요청·확정·취합, 사용자 인증, 비공개 Blob 운영 연결 | 새 화면·서버 코드는 아직 GitHub/Vercel에 배포하지 않음. 공개 API에 인증 없이 실제 자료를 넣으면 안 됨 |
+| 2026-11-10 | 회신 점검·취합·운영 배포 | `web/validate.js`, `web/collect.html`·`collect.js`, 현업 업로드 즉시 점검과 제출 재확인, 과별 취합·보완요청·확정, 차트와 제출본 엑셀 2시트·Markdown을 구현. 원본 회신 값은 유지. `flow.js`에 보완요청·재회신·확정 상태와 이력을 추가. `test_api.js` 29개, `test_validate.js`에서 가상 접수대장 120행·회신 엑셀 6개 통과(확인필요 12건). 브라우저에서 업로드→보완→재회신→확정→파일 다운로드 확인. GitHub `main`에 push 후 Vercel·Netlify 자동 배포 확인. Vercel 프로젝트 전체에 계정 접근 보호를 적용하고 비공개 Blob `cases.json` 저장소·`BLOB_READ_WRITE_TOKEN` 서버 환경변수를 연결. 의존성 보완 커밋 `b7caf94` 배포에서 `/api/app` GET `[]`, 잘못된 POST 오류 응답, 비로그인 요청 302 로그인 이동 확인. Netlify 취합·현업 화면, 검증용 CSV, 자체 `/api/recommend` 응답 HTTP 200 확인 | 실제 사용자별 과 권한 확인과 S7 AI 추천은 남음 | Vercel 계정 권한이 있는 사용자만 공유 저장 화면에 접근 가능. 과 선택은 사용자 권한 검증이 아니므로 실제 자료 입력은 보류 |
 
 ## 배포 주소
 
 | 서비스 | 접속 주소 | 역할·상태 |
 |---|---|---|
 | GitHub Pages | `https://dltjdfhr8-maker.github.io/national-assembly-request-tool/web/` · `https://dltjdfhr8-maker.github.io/national-assembly-request-tool/web/assign.html` | `main` 브랜치의 `/ (root)`에서 `web/` 정적 화면 제공 |
-| Vercel | `https://national-assembly-request-tool-six.vercel.app/` · `https://national-assembly-request-tool-six.vercel.app/web/assign.html` | 정적 화면과 교육용 Python 추천 API 제공. GitHub `main` 자동 배포 |
-| Netlify | `https://national-assembly-request-tool.netlify.app/assign.html` | 정적 화면·빌드 시 Python 결과 생성·Vercel API 프록시. GitHub `main` 자동 배포 |
+| Vercel | `https://national-assembly-request-tool-six.vercel.app/` · `https://national-assembly-request-tool-six.vercel.app/web/dept.html` · `https://national-assembly-request-tool-six.vercel.app/web/collect.html` | 계정 접근 보호 아래 정적 화면·Python 추천 API·서버 함수·비공개 Blob 공유 기록. GitHub `main` 자동 배포 |
+| Netlify | `https://national-assembly-request-tool.netlify.app/assign.html` · `https://national-assembly-request-tool.netlify.app/dept.html` · `https://national-assembly-request-tool.netlify.app/collect.html` | 정적 화면·브라우저별 기록. 빌드 시 Python으로 가상 추천 결과를 생성해 Netlify 함수가 제공. GitHub `main` 자동 배포 |
 | Cloudflare Workers | `https://green-term-f06a.dltjdfhr8.workers.dev/` | 사용자가 수동 업로드한 정적 화면. 사용자 확인상 작동; 이 저장소 push와 자동 연동 여부는 확인되지 않음 |
