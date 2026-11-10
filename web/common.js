@@ -88,20 +88,23 @@
   async function register(rows, actor, classify, departments) {
     const cases = structuredClone(await loadCases());
     const known = new Set(cases.map(item => item.id));
-    let added = 0;
+    const pending = [];
     for (const row of rows) {
       if (COLUMNS.some(column => !(column in row))) throw new Error('문항목록의 열이 맞지 않습니다.');
       const id = `${row.파일명}::${row.문항번호}`;
       if (known.has(id)) continue;
       const request = { 작업: '접수', 담당자: actor, 문항: row,
         후보: classify(`${row.요구내용} ${row.세부항목} ${row.비고}`) };
-      if (remote) await postAction(request, departments);
-      else flow.apply(cases, request, departments);
+      pending.push(request);
       known.add(id);
-      added++;
     }
-    if (added && !remote) saveCases(cases);
-    return { added, duplicates: rows.length - added };
+    if (remote && pending.length) {
+      const result = await postAction({ 작업: '접수일괄', 요청목록: pending }, departments);
+      return { added: result.added, duplicates: rows.length - result.added };
+    }
+    for (const request of pending) flow.apply(cases, request, departments);
+    if (pending.length) saveCases(cases);
+    return { added: pending.length, duplicates: rows.length - pending.length };
   }
   async function confirmMany(selections, actor, departments) {
     if (!selections.length) throw new Error('확정할 문항을 선택해 주세요.');

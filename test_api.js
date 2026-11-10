@@ -4,10 +4,12 @@ const Flow = require('./web/flow.js');
 const Engine = require('./web/engine.js');
 
 class FakeStore {
-  constructor() { this.cases = []; this.version = 0; this.writes = 0; this.conflict = false; }
-  async read() { return { cases: structuredClone(this.cases), etag: this.version ? `v${this.version}` : null }; }
+  constructor() { this.cases = []; this.version = 0; this.writes = 0; this.conflict = false; this.transientConflicts = 0; this.reads = 0; }
+  async read() { this.reads++; return { cases: structuredClone(this.cases), etag: this.version ? `v${this.version}` : null }; }
   async write(cases, etag) {
-    if (this.conflict || etag !== (this.version ? `v${this.version}` : null)) {
+    const transient = this.transientConflicts > 0;
+    if (transient) this.transientConflicts--;
+    if (this.conflict || transient || etag !== (this.version ? `v${this.version}` : null)) {
       const error = new Error('version changed');
       error.name = 'BlobPreconditionFailedError';
       throw error;
@@ -106,12 +108,48 @@ async function main() {
   store.conflict = true;
   await expect({ 작업: '배분', 담당자: actor, id: id2, 주관과: primary, 협조과: [], 확정방법: '수정' }, 409);
   store.conflict = false;
+  const batch = Array.from({ length: 19 }, (_, index) => ({ 작업: '접수', 담당자: actor,
+    문항: { ...row, 문항번호: String(index + 3) } }));
+  store.transientConflicts = 1;
+  const readsBeforeBatch = store.reads;
+  const batchResult = await expect({ 작업: '접수일괄', 요청목록: batch }, 200);
+  assert.equal(batchResult.body.added, 19);
+  assert.equal(store.cases.length, 21);
+  assert.equal(store.reads - readsBeforeBatch, 2);
+  checks += 3;
+  await expect({ 작업: '접수일괄', 요청목록: [{ 작업: '배분' }] }, 400);
+  await expect({ 작업: '접수일괄', 요청목록: [batch[0], batch[0]] }, 409);
   const malformed = await app.POST(new Request('http://local/api/app', { method: 'POST', body: '{' }));
   assert.equal(malformed.status, 400);
   checks++;
   assert.throws(() => Flow.apply([], { 작업: '접수', 담당자: actor, 문항: { ...row, 요구내용: '' } }, org),
     error => error.status === 400);
   checks++;
+  const priorLocation = global.location;
+  const priorFetch = global.fetch;
+  let postCount = 0;
+  global.location = { hostname: 'example.vercel.app' };
+  global.fetch = async (url, options) => {
+    if (options?.method === 'POST') {
+      postCount++;
+      const body = JSON.parse(options.body);
+      assert.equal(body.작업, '접수일괄');
+      assert.equal(body.요청목록.length, 19);
+      return Response.json({ ok: true, added: 19 });
+    }
+    assert.equal(url, '/api/app');
+    return Response.json([]);
+  };
+  try {
+    const common = require('./web/common.js');
+    const registered = await common.register(batch.map(action => action.문항), actor, () => [], org);
+    assert.deepEqual(registered, { added: 19, duplicates: 0 });
+    assert.equal(postCount, 1);
+    checks += 2;
+  } finally {
+    global.location = priorLocation;
+    global.fetch = priorFetch;
+  }
   console.log(`API·상태 규칙 ${checks}개 확인 통과 · 저장 ${store.writes}회 · 문항 ${store.cases.length}건`);
 }
 
