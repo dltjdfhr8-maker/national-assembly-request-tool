@@ -20,22 +20,22 @@ async function blobStore() {
       if (result.statusCode !== 200) throw new Error('저장소를 읽지 못했습니다.');
       const cases = JSON.parse(await new Response(result.stream).text());
       if (!Array.isArray(cases)) throw new Error('cases.json 형식이 올바르지 않습니다.');
-      return { cases, etag: result.blob.etag };
+      let etag = result.blob.etag;
+      if (etag.startsWith('W/')) {
+        // 비공개 Blob GET은 CDN의 약한 ETag를 줄 수 있으므로 원본 버전을 대조한다.
+        etag = etag.slice(2);
+        const current = await head(PATHNAME);
+        if (current.etag !== etag) {
+          throw new Flow.FlowError(409, '저장 기록이 변경되었습니다. 새로고침 후 다시 시도해 주세요.');
+        }
+      }
+      return { cases, etag };
     },
     async write(cases, etag) {
-      try {
-        await put(PATHNAME, JSON.stringify(cases), {
-          access: 'private', contentType: 'application/json',
-          allowOverwrite: Boolean(etag), ...(etag ? { ifMatch: etag } : {}),
-        });
-      } catch (error) {
-        if (isBlobConflict(error)) {
-          const current = await head(PATHNAME).catch(() => null);
-          console.error('Blob 충돌 진단', { sameEtag: etag === current?.etag,
-            readEtagLength: etag?.length ?? 0, headEtagLength: current?.etag?.length ?? 0 });
-        }
-        throw error;
-      }
+      await put(PATHNAME, JSON.stringify(cases), {
+        access: 'private', contentType: 'application/json',
+        allowOverwrite: Boolean(etag), ...(etag ? { ifMatch: etag } : {}),
+      });
     },
   };
 }
