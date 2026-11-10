@@ -6,15 +6,18 @@
   let table = null;
   let chart = null;
   let tableBuilt = false;
+  let updateVersion = 0;
 
-  function update() {
+  async function update() {
+    const version = ++updateVersion;
     try {
-      const rows = AppCommon.loadCases();
-      const confirmed = rows.filter(row => row.상태 === '배분확정');
+      const rows = await AppCommon.loadCases();
+      if (version !== updateVersion) return;
+      const confirmed = rows.filter(row => ['배분확정', '회신중', '회신완료', '재배정요청', '보완요청', '확정'].includes(row.상태));
       $('#count-all').textContent = rows.length;
       $('#count-new').textContent = rows.filter(row => row.상태 === '접수').length;
       $('#count-assigned').textContent = confirmed.length;
-      $('#count-other').textContent = rows.filter(row => !['접수', '배분확정'].includes(row.상태)).length;
+      $('#count-other').textContent = rows.filter(row => ['재배정요청', '보완요청'].includes(row.상태)).length;
       if (!departments.length || !tableBuilt) return;
 
       summary = departments.map(name => ({
@@ -31,8 +34,8 @@
       chart.data.datasets[1].data = top.map(row => row.협조);
       chart.update();
       $('#overview-note').textContent = top.length
-        ? `배분확정 ${confirmed.length}문항의 과별 주관·협조 건수입니다. 협조 과는 한 문항에 여러 개일 수 있습니다.`
-        : '배분확정 문항이 없습니다. 배분 화면에서 문항을 확정하면 현황이 나타납니다.';
+        ? `배분된 ${confirmed.length}문항의 과별 주관·협조 건수입니다. 협조 과는 한 문항에 여러 개일 수 있습니다.`
+        : '배분된 문항이 없습니다. 배분 화면에서 문항을 확정하면 현황이 나타납니다.';
       $('#export-xlsx').disabled = false;
     } catch (error) {
       $('#home-message').className = 'message error';
@@ -40,8 +43,8 @@
     }
   }
 
-  $('#reset-cases').addEventListener('click', () => {
-    const count = AppCommon.loadCases().length;
+  $('#reset-cases').addEventListener('click', async () => {
+    const count = (await AppCommon.loadCases()).length;
     if (!confirm(`이 브라우저에 저장된 문항 ${count}건과 배분 이력을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
     AppCommon.resetCases();
     update();
@@ -63,6 +66,8 @@
 
   addEventListener('storage', update);
   addEventListener('cases-updated', update);
+  $('#storage-mode').textContent = AppCommon.storageLabel();
+  $('#reset-cases').hidden = AppCommon.isRemote;
   update();
   AppCommon.loadData().then(data => {
     departments = data.departments;

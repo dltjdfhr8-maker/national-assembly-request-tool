@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>국회 요구자료 · 취합과 확정</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar"><div class="top-inner">
+    <a class="brand" href="./index.html"><span class="brand-mark">A</span><span>국회 요구자료 관리</span></a>
+    <nav class="nav" aria-label="화면 이동">
+      <a href="./index.html">시작 화면</a><a href="./assign.html">배분</a>
+      <a href="./dept.html">현업 회신</a><a class="active" aria-current="page" href="./collect.html">취합</a>
+    </nav>
+  </div></header>
+  <main class="shell">
+    <div class="hero"><div><span class="eyebrow">A부 · 국회 업무 총괄</span><h1>취합·검사·확정</h1><p>과별 회신과 확인필요를 살펴보고, 담당자가 보완 또는 확정을 결정합니다.</p></div><div class="hero-actions"><span class="hero-tag" id="storage-mode">저장 위치 확인 중</span></div></div>
+    <section class="section" aria-labelledby="review-title">
+      <div class="section-head"><div><h2 id="review-title">① 검사·확정</h2><p>원본 값을 바꾸지 않고 이상 항목을 확인필요로 표시합니다.</p></div><button class="button" id="refresh" type="button">기록 새로고침</button></div>
+      <div class="section-body"><label class="field actor-field">총괄 담당자 표시<input id="actor" type="text" autocomplete="off" placeholder="처리 이력에 남길 담당 표시"></label><div id="collect-message" class="message" role="status" aria-live="polite"></div><div id="case-reviews" class="collect-cards"><div class="empty">문항을 읽는 중입니다.</div></div></div>
+      <div class="section-head"><div><h2>과별 회신 취합표</h2><p>현재 배분에서 제출된 최신 회신을 과별로 표시합니다.</p></div></div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>의원 · 문항</th><th>회신과</th><th>연도</th><th>예산(천원)</th><th>집행액(천원)</th><th>비고</th><th>문항별 자료</th><th>확인필요</th></tr></thead><tbody id="merged-body"></tbody></table></div>
+    </section>
+    <section class="section" aria-labelledby="register-title">
+      <div class="section-head"><div><h2 id="register-title">② 검증용 접수대장 점검</h2><p>조직도 밖 과·기간 역전·기한·중복·공백 표기를 검사합니다.</p></div></div>
+      <div class="section-body"><div class="actions"><button class="button primary" id="check-sample" type="button">제공된 120건 점검</button><label class="field">다른 CSV 선택<input id="register-file" type="file" accept=".csv,text/csv"></label></div><div id="register-message" class="message" role="status" aria-live="polite"></div></div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>행</th><th>접수번호</th><th>항목</th><th>확인할 내용</th></tr></thead><tbody id="register-issues"></tbody></table></div>
+    </section>
+    <section class="section" aria-labelledby="export-title">
+      <div class="section-head"><div><h2 id="export-title">③ 현황·제출본</h2><p>확정된 문항만 제출본 파일에 포함합니다. 파일을 만드는 동작은 국회 제출이 아닙니다.</p></div><div class="actions"><button class="button primary" id="export-xlsx" type="button" disabled>제출본 엑셀</button><button class="button" id="export-md" type="button" disabled>제출본 Markdown</button></div></div>
+      <div class="section-body"><div class="status-grid" id="status-grid"></div><div class="chart-box"><canvas id="department-chart" role="img" aria-label="과별 배분 문항 수 막대 차트"></canvas></div><p id="export-note" class="help">현황을 읽는 중입니다.</p></div>
+    </section>
+    <p class="foot">확인필요는 사람이 검토합니다. 실제 요구자료는 내부 시스템에서만 처리하세요.</p>
+  </main>
+  <script src="./lib/papaparse.min.js"></script><script src="./lib/chart.umd.min.js"></script><script src="./lib/xlsx.full.min.js"></script>
+  <script src="./engine.js"></script><script src="./flow.js"></script><script src="./validate.js"></script><script src="./common.js"></script><script src="./collect.js"></script>
+</body>
+</html>

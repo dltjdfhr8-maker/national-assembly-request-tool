@@ -12,12 +12,12 @@
     <nav class="nav" aria-label="화면 이동">
       <a href="./index.html">시작 화면</a>
       <a class="active" aria-current="page" href="./assign.html">배분</a>
-      <span class="future" title="S6에서 제공">현업 회신 · S6</span>
-      <span class="future" title="S8에서 제공">취합 · S8</span>
+      <a href="./dept.html">현업 회신</a>
+      <a href="./collect.html">취합</a>
     </nav>
   </div></header>
   <main class="shell">
-    <div class="hero"><div><span class="eyebrow">A부 · 국회 업무 총괄</span><h1>접수와 배분</h1><p>요구서를 문항별로 나누고, 후보를 확인해 담당 과를 확정합니다.</p></div><div class="hero-actions"><span class="hero-tag">26개 과 · 보강 규칙 적용</span><button class="button danger" id="reset-cases" type="button">저장 기록 초기화</button></div></div>
+    <div class="hero"><div><span class="eyebrow">A부 · 국회 업무 총괄</span><h1>접수와 배분</h1><p>요구서를 문항별로 나누고, 후보를 확인해 담당 과를 확정합니다.</p></div><div class="hero-actions"><span class="hero-tag" id="storage-mode">저장 위치 확인 중</span><button class="button danger" id="reset-cases" type="button">저장 기록 초기화</button></div></div>
     <section class="stats" aria-label="배분 현황">
       <div class="stat"><small>전체 문항</small><strong id="stat-all">0</strong></div>
       <div class="stat"><small>접수</small><strong id="stat-new">0</strong></div>
@@ -45,13 +45,13 @@
       <div class="section-head"><div><h2 id="assign-title">② 배분</h2><p>규칙 후보는 참고용입니다. 주관 과와 협조 과는 담당자가 확정합니다.</p></div><label class="field" style="min-width:220px">문항 찾기 <input id="filter" type="search" placeholder="의원·내용·파일명"></label></div>
       <div class="bulk-bar"><span id="selected-count">선택 0건</span><button class="button primary" id="confirm-selected" type="button" disabled>선택 문항 확정</button><span class="count-note">각 행에서 주관·협조 과를 확인한 뒤 확정하세요.</span></div>
       <div id="assign-message" class="message" style="margin:15px 20px" role="status" aria-live="polite"></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr><th><input id="select-all" type="checkbox" aria-label="보이는 문항 모두 선택"></th><th>상태</th><th>의원 · 문항</th><th>요구내용</th><th>후보 3순위</th><th>주관 과 · 협조 과</th><th>확정 · 취소</th></tr></thead><tbody id="assign-body"></tbody></table></div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th><input id="select-all" type="checkbox" aria-label="보이는 문항 모두 선택"></th><th>상태</th><th>의원 · 문항</th><th>요구내용·재배정 사유</th><th>후보·과거 이력</th><th>주관 과 · 협조 과</th><th>확정 · 취소</th></tr></thead><tbody id="assign-body"></tbody></table></div>
       <div class="section-body" id="empty-state" hidden><div class="empty">접수된 문항이 없습니다. 위에서 요구서를 등록해 주세요.</div></div>
     </section>
-    <p class="foot">자료와 처리 이력은 이 브라우저에만 저장됩니다. 배분 변경 시 담당자·시각·사유를 기록합니다.</p>
+    <p class="foot">저장 위치는 화면 상단에 표시됩니다. 배분 변경 시 담당자·시각·사유를 기록합니다.</p>
   </main>
   <script src="./lib/papaparse.min.js"></script>
-  <script src="./engine.js"></script><script src="./split.js"></script><script src="./common.js"></script>
+  <script src="./engine.js"></script><script src="./split.js"></script><script src="./flow.js"></script><script src="./common.js"></script>
   <script type="module" src="./assign.js"></script>
 </body>
 </html>

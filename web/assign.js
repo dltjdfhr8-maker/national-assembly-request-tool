@@ -5,9 +5,10 @@ let data = null;
 let staged = [];
 let checks = [];
 const selectedIds = new Set();
+let renderVersion = 0;
 
 function updateSelection() {
-  const boxes = [...document.querySelectorAll('#assign-body .row-select')];
+  const boxes = [...document.querySelectorAll('#assign-body .row-select:not(:disabled)')];
   const selected = boxes.filter(box => box.checked).length;
   $('#selected-count').textContent = `선택 ${selected}건`;
   $('#confirm-selected').disabled = selected === 0;
@@ -164,10 +165,13 @@ function makeSelect(item) {
   return select;
 }
 
-function renderAssign() {
+async function renderAssign() {
+  if (!data) return;
+  const version = ++renderVersion;
   let cases;
-  try { cases = AppCommon.loadCases(); }
+  try { cases = await AppCommon.loadCases(); }
   catch (error) { message('#assign-message', error.message, 'error'); return; }
+  if (version !== renderVersion) return;
   renderCounts(cases);
   const filter = $('#filter').value.trim();
   const visible = filter
@@ -184,6 +188,7 @@ function renderAssign() {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'row-select';
+    checkbox.disabled = !['접수', '재배정요청', '배분확정'].includes(item.상태);
     checkbox.checked = selectedIds.has(item.id);
     checkbox.setAttribute('aria-label', `${item.의원} ${item.문항번호}번 선택`);
     checkbox.addEventListener('change', () => {
@@ -202,6 +207,12 @@ function renderAssign() {
     const content = cell(tr, item.요구내용, 'content');
     addSmall(content, item.세부항목);
     addSmall(content, item.비고);
+    if (item.상태 === '재배정요청' && item.재배정) {
+      const notice = document.createElement('p');
+      notice.className = 'reassign-note';
+      notice.textContent = `재배정 요청 · ${item.재배정.과} · 사유: ${item.재배정.사유} · 희망 과: ${item.재배정.희망과 || '미지정'}`;
+      content.append(notice);
+    }
     const candidates = cell(tr, '');
     if (!item.후보.length) {
       const note = document.createElement('span');
@@ -227,6 +238,7 @@ function renderAssign() {
         candidates.append(note);
       }
     }
+    candidates.append(AppCommon.historyNode(item, data.history));
     const assignment = cell(tr, '', 'assign-cell');
     const primary = makeSelect(item);
     primary.classList.add('primary-select');
@@ -271,28 +283,31 @@ function renderAssign() {
     actionButtons.className = 'row-actions';
     const button = document.createElement('button');
     button.className = 'button primary';
-    button.textContent = item.상태 === '배분확정' ? '다시 확정' : '배분 확정';
-    button.addEventListener('click', () => {
+    button.disabled = checkbox.disabled;
+    button.textContent = item.상태 === '재배정요청' ? '다시 배분' : item.상태 === '배분확정' ? '다시 확정' : '배분 확정';
+    button.addEventListener('click', async () => {
       try {
+        button.disabled = true;
         const helpers = [...list.querySelectorAll('input:checked')].map(box => box.value);
-        const result = AppCommon.confirm(item.id, primary.value, helpers, $('#actor').value, reason.value, data.departments);
+        const result = await AppCommon.confirm(item.id, primary.value, helpers, $('#actor').value, reason.value, data.departments);
         message('#assign-message', `${result.의원} ${result.문항번호}번: ${result.주관과} 배분을 확정했습니다. (${result.확정방법})`, 'success');
         selectedIds.clear();
-        renderAssign();
-      } catch (error) { message('#assign-message', error.message, 'error'); }
+        await renderAssign();
+      } catch (error) { message('#assign-message', error.message, 'error'); button.disabled = false; }
     });
     actionButtons.append(button);
     if (item.상태 === '배분확정') {
       const cancel = document.createElement('button');
       cancel.className = 'button danger';
       cancel.textContent = '배분 취소';
-      cancel.addEventListener('click', () => {
+      cancel.addEventListener('click', async () => {
         try {
-          const result = AppCommon.cancelAssignment(item.id, $('#actor').value, reason.value);
+          cancel.disabled = true;
+          const result = await AppCommon.cancelAssignment(item.id, $('#actor').value, reason.value, data.departments);
           message('#assign-message', `${result.의원} ${result.문항번호}번 배분을 취소하고 접수 상태로 되돌렸습니다.`, 'success');
           selectedIds.clear();
-          renderAssign();
-        } catch (error) { message('#assign-message', error.message, 'error'); }
+          await renderAssign();
+        } catch (error) { message('#assign-message', error.message, 'error'); cancel.disabled = false; }
       });
       actionButtons.append(cancel);
     }
@@ -315,14 +330,16 @@ $('#filter').addEventListener('input', () => { selectedIds.clear(); renderAssign
 $('#select-all').addEventListener('change', event => {
   document.querySelectorAll('#assign-body tr[data-id]').forEach(row => {
     const checked = event.target.checked;
-    row.querySelector('.row-select').checked = checked;
-    if (checked) selectedIds.add(row.dataset.id);
+    const box = row.querySelector('.row-select');
+    box.checked = checked && !box.disabled;
+    if (box.checked) selectedIds.add(row.dataset.id);
     else selectedIds.delete(row.dataset.id);
   });
   updateSelection();
 });
-$('#confirm-selected').addEventListener('click', () => {
+$('#confirm-selected').addEventListener('click', async () => {
   try {
+    $('#confirm-selected').disabled = true;
     const selections = [...document.querySelectorAll('#assign-body tr[data-id]')]
       .filter(row => row.querySelector('.row-select').checked)
       .map(row => ({
@@ -331,15 +348,15 @@ $('#confirm-selected').addEventListener('click', () => {
         helpers: [...row.querySelectorAll('.helper-list input:checked')].map(box => box.value),
         reason: row.querySelector('.reason-input').value,
       }));
-    const result = AppCommon.confirmMany(selections, $('#actor').value, data.departments);
+    const result = await AppCommon.confirmMany(selections, $('#actor').value, data.departments);
     message('#assign-message', `${result.changedCount}문항의 배분을 확정했습니다.`, 'success');
     selectedIds.clear();
-    renderAssign();
-  } catch (error) { message('#assign-message', error.message, 'error'); }
+    await renderAssign();
+  } catch (error) { message('#assign-message', error.message, 'error'); updateSelection(); }
 });
-$('#reset-cases').addEventListener('click', () => {
+$('#reset-cases').addEventListener('click', async () => {
   try {
-    const count = AppCommon.loadCases().length;
+    const count = (await AppCommon.loadCases()).length;
     if (!confirm(`이 브라우저에 저장된 문항 ${count}건과 배분 이력을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
     AppCommon.resetCases();
     selectedIds.clear();
@@ -348,29 +365,33 @@ $('#reset-cases').addEventListener('click', () => {
     $('#pdf-files').value = '';
     $('#csv-file').value = '';
     renderPreview();
-    renderAssign();
+    await renderAssign();
     message('#assign-message', '이 브라우저의 접수·배분 기록을 초기화했습니다.', 'success');
     message('#receive-message', '');
   } catch (error) { message('#assign-message', error.message, 'error'); }
 });
-$('#register').addEventListener('click', () => {
+$('#register').addEventListener('click', async () => {
   try {
+    $('#register').disabled = true;
     if (checks.some(check => !check.일치)) throw new Error('문항 수 또는 번호를 먼저 확인해 주세요.');
-    const result = AppCommon.register(staged, $('#actor').value, data.classify);
+    const result = await AppCommon.register(staged, $('#actor').value, data.classify, data.departments);
     message('#receive-message', `${result.added}문항을 등록했습니다. 중복 ${result.duplicates}문항은 건너뛰었습니다.`, 'success');
     staged = [];
     checks = [];
     renderPreview();
-    renderAssign();
-  } catch (error) { message('#receive-message', error.message, 'error'); }
+    await renderAssign();
+  } catch (error) { message('#receive-message', error.message, 'error'); renderPreview(); }
 });
 addEventListener('storage', renderAssign);
+addEventListener('cases-updated', renderAssign);
 
+$('#storage-mode').textContent = AppCommon.storageLabel();
+$('#reset-cases').hidden = AppCommon.isRemote;
 try {
   data = await AppCommon.loadData();
-  $('#data-status').textContent = '보강 기준표 · 26개 과 읽음';
+  $('#data-status').textContent = '보강 기준표 · 26개 과 · 과거 520건 읽음';
   renderPreview();
-  renderAssign();
+  await renderAssign();
 } catch (error) {
   $('#data-status').textContent = '자료 읽기 실패';
   message('#receive-message', `${error.message} · http://localhost:8000에서 열어 주세요.`, 'error');

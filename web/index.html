@@ -13,32 +13,32 @@
     <nav class="nav" aria-label="화면 이동">
       <a class="active" aria-current="page" href="./index.html">시작 화면</a>
       <a href="./assign.html">배분</a>
-      <span class="future" title="S6에서 제공">현업 회신 · S6</span>
-      <span class="future" title="S8에서 제공">취합 · S8</span>
+      <a href="./dept.html">현업 회신</a>
+      <a href="./collect.html">취합</a>
     </nav>
   </div></header>
   <main class="shell">
-    <div class="hero"><div><span class="eyebrow">A부 · 국회 업무 총괄</span><h1>요구자료 현황</h1><p>접수한 문항과 배분 상태를 한곳에서 확인합니다.</p></div><div class="hero-actions"><span class="hero-tag">브라우저에 임시 저장 중</span><button class="button danger" id="reset-cases" type="button">저장 기록 초기화</button></div></div>
+    <div class="hero"><div><span class="eyebrow">A부 · 국회 업무 총괄</span><h1>요구자료 현황</h1><p>접수한 문항과 배분 상태를 한곳에서 확인합니다.</p></div><div class="hero-actions"><span class="hero-tag" id="storage-mode">저장 위치 확인 중</span><button class="button danger" id="reset-cases" type="button">저장 기록 초기화</button></div></div>
     <section class="stats" aria-label="상태별 문항 수">
       <div class="stat"><small>전체 문항</small><strong id="count-all">0</strong></div>
       <div class="stat"><small>접수</small><strong id="count-new">0</strong></div>
-      <div class="stat"><small>배분확정</small><strong id="count-assigned">0</strong></div>
+      <div class="stat"><small>배분된 문항</small><strong id="count-assigned">0</strong></div>
       <div class="stat"><small>확인할 상태</small><strong id="count-other">0</strong></div>
     </section>
     <div id="home-message" class="message" role="status" aria-live="polite"></div>
     <section class="section" aria-labelledby="overview-title">
-      <div class="section-head"><div><h2 id="overview-title">과별 배분 현황</h2><p>이 브라우저에서 확정한 문항을 과별로 집계합니다. 차트에는 상위 10개 과를 표시합니다.</p></div><button class="button" id="export-xlsx" type="button" disabled>현황 엑셀 내려받기</button></div>
+      <div class="section-head"><div><h2 id="overview-title">과별 배분 현황</h2><p>배분된 문항을 과별로 집계합니다. 차트에는 상위 10개 과를 표시합니다.</p></div><button class="button" id="export-xlsx" type="button" disabled>현황 엑셀 내려받기</button></div>
       <div class="section-body"><div class="chart-box"><canvas id="department-chart" role="img" aria-label="과별 배분확정 문항 수 막대 차트"></canvas></div><p id="overview-note" class="help">조직도와 현황을 읽는 중입니다.</p></div>
       <div class="section-body overview-table"><label class="field">과 찾기 <input id="department-filter" type="search" placeholder="과 이름"></label><div id="department-table" aria-label="과별 배분 현황 표"></div></div>
     </section>
     <section class="section"><div class="section-head"><div><h2>업무 화면</h2><p>요구서를 등록한 뒤 문항별로 주관 과와 협조 과를 정합니다.</p></div></div>
       <div class="section-body quick-links">
         <a class="quick-card" href="./assign.html"><h3>① 접수 · 배분 →</h3><p>PDF 또는 문항목록 CSV를 올리고, 문항별 후보를 보며 배분합니다.</p></a>
-        <div class="quick-card disabled"><h3>② 현업 회신</h3><p>S6에서 연결됩니다. 배분된 과의 회신을 처리합니다.</p></div>
-        <div class="quick-card disabled"><h3>③ 취합</h3><p>S8에서 연결됩니다. 회신과 누락 여부를 확인합니다.</p></div>
+        <a class="quick-card" href="./dept.html"><h3>② 현업 회신 →</h3><p>내 과를 선택하고 회신 엑셀을 올리거나 재배정을 요청합니다.</p></a>
+        <a class="quick-card" href="./collect.html"><h3>③ 취합·확정 →</h3><p>회신을 합쳐 검사하고, 보완 또는 확인 완료를 처리합니다.</p></a>
       </div>
     </section>
-    <p class="foot">현재 기록은 이 브라우저의 저장 공간에만 남습니다. 다른 PC나 브라우저와 공유되지 않습니다.</p>
+    <p class="foot">저장 위치는 화면 상단에 표시됩니다. Vercel에서는 서버 기록을 조회합니다.</p>
   </main>
   <script src="./lib/chart.umd.min.js"></script><script src="./lib/tabulator.min.js"></script><script src="./lib/xlsx.full.min.js"></script>
   <script src="./engine.js"></script><script src="./common.js"></script><script src="./dashboard.js"></script>

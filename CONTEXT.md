@@ -22,10 +22,15 @@
 | 부서 회신 | 부서회신/회신_*.xlsx | 회신 양식·취합·검사 예시 6개 |
 | 문제정의 양식 | 00_문제정의/problem_초안.md | 5칸 표 형식 참고 |
 | 작업 기록 | PROGRESS.md | 완료·남은 일·막힌 점과 현재 단계 확인 |
-| 접수·배분 화면 | web/index.html, web/assign.html, web/split.js, web/common.js | 총괄 담당의 PDF·CSV 접수, 문항 분해, 후보 확인, 브라우저 저장·배분확정 |
-| 과별 배분 현황 | web/dashboard.js, web/index.html | 브라우저에 저장된 확정 문항의 과별 차트·정렬 표·엑셀 내보내기 |
+| 접수·배분 화면 | web/index.html, web/assign.html, web/split.js, web/common.js | 총괄 담당의 PDF·CSV 접수, 문항 분해, 후보·과거 이력 확인, 배분확정·재배정 |
+| 현업 회신 화면 | web/dept.html, web/dept.js | 내 과 선택, 회신 엑셀 읽기·기본 점검·제출, 재배정 요청 |
+| 취합·검사 화면 | web/collect.html, web/collect.js, web/validate.js | 확인필요·미회신 과, 보완요청·확정, 검증용 접수대장 점검, 제출본 엑셀·Markdown |
+| 과별 배분 현황 | web/dashboard.js, web/index.html | 상태별 건수와 과별 차트·정렬 표·엑셀 내보내기 |
+| 상태 변경·서버 API | web/flow.js, api/app.js, api/org.json, test_api.js | 접수·배분·회신·재배정요청 상태 규칙, 비공개 Blob 저장 코드와 가짜 저장소 시험. `*.vercel.app` 화면은 `/api/app`, 다른 주소는 브라우저 저장 사용 |
 | 화면용 보강 규칙·조직도 | web/data/rules_보강.csv, web/data/A부_조직도_26개과.csv | 브라우저에서 읽는 배분 기준과 허용 과 목록. 원본은 data/에 유지 |
+| 화면용 과거 이력 | web/data/접수대장.csv | 원본 520건의 읽기 전용 복사본. 1순위 근거 키워드로 검색 |
+| 화면용 검증 자료 | web/data/검증용_접수대장.csv | 원본 120건의 읽기 전용 복사본. 검사 항목 확인용 |
 
 개인 툴을 만들 때는 이 표에 개인 자료(가상 샘플) 위치를 추가한다.
 
-`처리지침.md` 확정본은 현재 작업 폴더 안에는 없고 위의 사용자 제공 경로에 있다. `처리지침_초안.md`의 「확정본과의 비교」에서 차이를 기록했다. `cases.json`은 설계된 상태 저장 파일이지 현재 존재하는 자료로 취급하지 않는다.
+`처리지침.md` 확정본은 현재 작업 폴더 안에는 없고 위의 사용자 제공 경로에 있다. `처리지침_초안.md`의 「확정본과의 비교」에서 차이를 기록했다. `cases.json`은 서버가 Vercel Blob에 만들도록 설계된 상태 저장 파일이며 현재 작업 폴더에는 없다.
