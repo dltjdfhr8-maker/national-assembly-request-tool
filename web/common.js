@@ -149,7 +149,11 @@
   }
 
   function parseQuestionCsv(text) {
-    const rows = AllocationEngine.parseCsv(text);
+    const parsed = root.Papa
+      ? root.Papa.parse(text, { header: true, skipEmptyLines: 'greedy', transformHeader: header => header.replace(/^\uFEFF/, '').trim() })
+      : { data: AllocationEngine.parseCsv(text), errors: [] };
+    if (parsed.errors.length) throw new Error(`CSV 형식을 확인해 주세요. ${parsed.errors[0].message}`);
+    const rows = parsed.data;
     if (rows.length && COLUMNS.some(column => !(column in rows[0]))) {
       throw new Error('문항목록 CSV의 열이 맞지 않습니다.');
     }

@@ -23,6 +23,7 @@
 | 문제정의 양식 | 00_문제정의/problem_초안.md | 5칸 표 형식 참고 |
 | 작업 기록 | PROGRESS.md | 완료·남은 일·막힌 점과 현재 단계 확인 |
 | 접수·배분 화면 | web/index.html, web/assign.html, web/split.js, web/common.js | 총괄 담당의 PDF·CSV 접수, 문항 분해, 후보 확인, 브라우저 저장·배분확정 |
+| 과별 배분 현황 | web/dashboard.js, web/index.html | 브라우저에 저장된 확정 문항의 과별 차트·정렬 표·엑셀 내보내기 |
 | 화면용 보강 규칙·조직도 | web/data/rules_보강.csv, web/data/A부_조직도_26개과.csv | 브라우저에서 읽는 배분 기준과 허용 과 목록. 원본은 data/에 유지 |
 
 개인 툴을 만들 때는 이 표에 개인 자료(가상 샘플) 위치를 추가한다.

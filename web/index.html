@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>국회 요구자료 · 시작</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./lib/tabulator.min.css">
 </head>
 <body>
   <header class="topbar"><div class="top-inner">
@@ -25,6 +26,11 @@
       <div class="stat"><small>확인할 상태</small><strong id="count-other">0</strong></div>
     </section>
     <div id="home-message" class="message" role="status" aria-live="polite"></div>
+    <section class="section" aria-labelledby="overview-title">
+      <div class="section-head"><div><h2 id="overview-title">과별 배분 현황</h2><p>이 브라우저에서 확정한 문항을 과별로 집계합니다. 차트에는 상위 10개 과를 표시합니다.</p></div><button class="button" id="export-xlsx" type="button" disabled>현황 엑셀 내려받기</button></div>
+      <div class="section-body"><div class="chart-box"><canvas id="department-chart" role="img" aria-label="과별 배분확정 문항 수 막대 차트"></canvas></div><p id="overview-note" class="help">조직도와 현황을 읽는 중입니다.</p></div>
+      <div class="section-body overview-table"><label class="field">과 찾기 <input id="department-filter" type="search" placeholder="과 이름"></label><div id="department-table" aria-label="과별 배분 현황 표"></div></div>
+    </section>
     <section class="section"><div class="section-head"><div><h2>업무 화면</h2><p>요구서를 등록한 뒤 문항별로 주관 과와 협조 과를 정합니다.</p></div></div>
       <div class="section-body quick-links">
         <a class="quick-card" href="./assign.html"><h3>① 접수 · 배분 →</h3><p>PDF 또는 문항목록 CSV를 올리고, 문항별 후보를 보며 배분합니다.</p></a>
@@ -34,28 +40,7 @@
     </section>
     <p class="foot">현재 기록은 이 브라우저의 저장 공간에만 남습니다. 다른 PC나 브라우저와 공유되지 않습니다.</p>
   </main>
-  <script src="./engine.js"></script><script src="./common.js"></script>
-  <script>
-    function showCounts() {
-      try {
-        const rows = AppCommon.loadCases();
-        document.querySelector('#count-all').textContent = rows.length;
-        document.querySelector('#count-new').textContent = rows.filter(row => row.상태 === '접수').length;
-        document.querySelector('#count-assigned').textContent = rows.filter(row => row.상태 === '배분확정').length;
-        document.querySelector('#count-other').textContent = rows.filter(row => !['접수', '배분확정'].includes(row.상태)).length;
-      } catch (error) { document.querySelector('.foot').textContent = error.message; }
-    }
-    showCounts();
-    addEventListener('storage', showCounts);
-    document.querySelector('#reset-cases').addEventListener('click', () => {
-      const count = AppCommon.loadCases().length;
-      if (!confirm(`이 브라우저에 저장된 문항 ${count}건과 배분 이력을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
-      AppCommon.resetCases();
-      showCounts();
-      const message = document.querySelector('#home-message');
-      message.className = 'message success';
-      message.textContent = '이 브라우저의 접수·배분 기록을 초기화했습니다.';
-    });
-  </script>
+  <script src="./lib/chart.umd.min.js"></script><script src="./lib/tabulator.min.js"></script><script src="./lib/xlsx.full.min.js"></script>
+  <script src="./engine.js"></script><script src="./common.js"></script><script src="./dashboard.js"></script>
 </body>
 </html>

@@ -26,3 +26,13 @@
 | 2026-11-10 | Netlify 연결 준비 | Netlify 공식 `netlify/context-and-tools` 목록에서 `netlify-skills` 플러그인 1.8.1을 Codex 사용자 설정에 설치·활성화하고, 공식 원격 MCP `https://mcp.netlify.com/mcp`를 등록해 OAuth 로그인 완료 | Netlify 사이트 생성·GitHub 저장소 연결·배포는 요청 시 진행 | 현재 대화에는 새 MCP 도구가 즉시 표시되지 않을 수 있어 다음 대화에서 사용 확인 필요 |
 | 2026-11-10 | Vercel·Netlify Python 배포 | Vercel `https://national-assembly-request-tool-six.vercel.app/web/assign.html`에 Python 추천 API `/api/recommend?sample=T01`와 화면을 운영 배포. Netlify `https://national-assembly-request-tool.netlify.app/assign.html`는 배포 빌드에서 Python을 실행해 `/generated/python-check.json` 생성, `/api/recommend`를 Vercel API로 프록시. 두 프로젝트를 GitHub `main`에 연결. 커밋 `42000c2` push 뒤 두 서비스 운영 배포가 준비 완료됐고 화면·Python API 4개 주소 모두 HTTP 200 확인 | 없음 | Netlify 프로젝트 공개 설정은 사용자가 변경 |
 | 2026-11-10 | Vercel 첫 주소 수정 | `/`의 HTML 재작성 때문에 `style.css`와 `common.js`가 `/`에서 404인 문제를 확인. `vercel.json`에서 `/`를 `/web/`으로 이동하도록 수정. 자동 배포 후 첫 주소 307→`/web/`, 스타일 파일과 Python API HTTP 200 확인 | 없음 | 없음 |
+| 2026-11-10 | 브라우저 라이브러리 활용·공개 전 검사 | Papa Parse(CSV), Fuse.js(문항 검색), Chart.js(과별 차트), Tabulator(과별 정렬·검색 표), SheetJS(현황 엑셀 내보내기)를 화면에 연결. 기존 pdf.js 사용 확인. 브라우저에서 CSV 접수→배분확정→차트·표 반영→엑셀 다운로드 확인. 공개 대상 67파일 중 프로젝트 파일 57개에서 키·개인키·주민등록번호·휴대전화·이메일 형식 발견 0건, `.env` 추적 0개. `지침재료/00_안내.txt`가 자료를 가상 교육용으로 명시하며 PDF 3건에 가상 표시 확인 | S6 회신 엑셀 업로드·S8 취합은 별도 구현 | 자동 검사는 실제 자료 출처를 독립적으로 증명할 수 없음. 외부 라이브러리의 원본 라이선스 파일 다운로드는 자동 승인 검토에서 거절되어 `web/lib/THIRD_PARTY.md`에 출처·라이선스 링크를 기록 |
+
+## 배포 주소
+
+| 서비스 | 접속 주소 | 역할·상태 |
+|---|---|---|
+| GitHub Pages | `https://dltjdfhr8-maker.github.io/national-assembly-request-tool/web/` · `https://dltjdfhr8-maker.github.io/national-assembly-request-tool/web/assign.html` | `main` 브랜치의 `/ (root)`에서 `web/` 정적 화면 제공 |
+| Vercel | `https://national-assembly-request-tool-six.vercel.app/` · `https://national-assembly-request-tool-six.vercel.app/web/assign.html` | 정적 화면과 교육용 Python 추천 API 제공. GitHub `main` 자동 배포 |
+| Netlify | `https://national-assembly-request-tool.netlify.app/assign.html` | 정적 화면·빌드 시 Python 결과 생성·Vercel API 프록시. GitHub `main` 자동 배포 |
+| Cloudflare Workers | `https://green-term-f06a.dltjdfhr8.workers.dev/` | 사용자가 수동 업로드한 정적 화면. 사용자 확인상 작동; 이 저장소 push와 자동 연동 여부는 확인되지 않음 |

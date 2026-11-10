@@ -1,3 +1,5 @@
+import Fuse from './lib/fuse.min.mjs';
+
 const $ = selector => document.querySelector(selector);
 let data = null;
 let staged = [];
@@ -167,8 +169,11 @@ function renderAssign() {
   try { cases = AppCommon.loadCases(); }
   catch (error) { message('#assign-message', error.message, 'error'); return; }
   renderCounts(cases);
-  const filter = $('#filter').value.trim().toLocaleLowerCase('ko');
-  const visible = cases.filter(item => `${item.파일명} ${item.의원} ${item.요구내용}`.toLocaleLowerCase('ko').includes(filter));
+  const filter = $('#filter').value.trim();
+  const visible = filter
+    ? new Fuse(cases, { keys: ['파일명', '의원', '요구내용', '세부항목'], threshold: 0.35, ignoreLocation: true })
+      .search(filter).map(result => result.item)
+    : cases;
   $('#empty-state').hidden = cases.length > 0;
   const tbody = $('#assign-body');
   tbody.replaceChildren();
