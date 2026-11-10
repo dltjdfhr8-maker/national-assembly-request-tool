@@ -12,7 +12,7 @@ async function blobStore() {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     throw new Flow.FlowError(503, 'Vercel Blob 토큰이 서버 환경변수에 설정되지 않았습니다.');
   }
-  const { get, put } = await import('@vercel/blob');
+  const { get, head, put } = await import('@vercel/blob');
   return {
     async read() {
       const result = await get(PATHNAME, { access: 'private', useCache: false });
@@ -23,10 +23,19 @@ async function blobStore() {
       return { cases, etag: result.blob.etag };
     },
     async write(cases, etag) {
-      await put(PATHNAME, JSON.stringify(cases), {
-        access: 'private', contentType: 'application/json',
-        allowOverwrite: Boolean(etag), ...(etag ? { ifMatch: etag } : {}),
-      });
+      try {
+        await put(PATHNAME, JSON.stringify(cases), {
+          access: 'private', contentType: 'application/json',
+          allowOverwrite: Boolean(etag), ...(etag ? { ifMatch: etag } : {}),
+        });
+      } catch (error) {
+        if (isBlobConflict(error)) {
+          const current = await head(PATHNAME).catch(() => null);
+          console.error('Blob 충돌 진단', { sameEtag: etag === current?.etag,
+            readEtagLength: etag?.length ?? 0, headEtagLength: current?.etag?.length ?? 0 });
+        }
+        throw error;
+      }
     },
   };
 }
