@@ -13,7 +13,7 @@
 | Vercel | [접수·배분](https://national-assembly-request-tool-six.vercel.app/web/assign.html) | [교육용 추천 API](https://national-assembly-request-tool-six.vercel.app/api/recommend?sample=T01)를 요청마다 Python으로 실행 |
 | Netlify | [접수·배분](https://national-assembly-request-tool.netlify.app/assign.html) | 배포 시 Python 규칙 엔진으로 [결과 JSON](https://national-assembly-request-tool.netlify.app/generated/python-check.json)을 생성하고, [실시간 API 경로](https://national-assembly-request-tool.netlify.app/api/recommend?sample=T01)는 Vercel Python API로 전달 |
 
-두 서비스의 Python 예시는 `data/시험_요구문항_40건.csv`에 있는 **교육용 시험번호**만 받습니다. 실제 요구자료나 임의의 문항 내용을 서버로 보내는 API는 제공하지 않습니다. 현재 두 서비스 배포는 수동 배포이며 GitHub에 push해도 자동으로 재배포되지는 않습니다.
+두 서비스의 Python 예시는 `data/시험_요구문항_40건.csv`에 있는 **교육용 시험번호**만 받습니다. 실제 요구자료나 임의의 문항 내용을 서버로 보내는 API는 제공하지 않습니다. Vercel과 Netlify는 GitHub `main` 브랜치에 연결되어 이후 push하면 자동으로 다시 배포됩니다.
 
 GitHub Pages는 `main` 브랜치의 `/ (root)`에서 제공됩니다. 웹 파일은 `web/`에 그대로 있으며, 주소 끝에 `/web/` 또는 `/web/assign.html`을 붙여 엽니다.
 
