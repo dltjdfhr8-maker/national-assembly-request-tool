@@ -10,7 +10,7 @@
 | 배포 서비스 | 화면 | Python 실행 역할 |
 |---|---|---|
 | GitHub Pages | [교육용 화면](https://dltjdfhr8-maker.github.io/national-assembly-request-tool/web/assign.html) | 정적 파일 제공 |
-| Vercel | [접수·배분](https://national-assembly-request-tool-six.vercel.app/web/assign.html) | [교육용 추천 API](https://national-assembly-request-tool-six.vercel.app/api/recommend?sample=T01)를 요청마다 Python으로 실행 |
+| Vercel | [시작 화면](https://national-assembly-request-tool-six.vercel.app/) · [접수·배분](https://national-assembly-request-tool-six.vercel.app/web/assign.html) | [교육용 추천 API](https://national-assembly-request-tool-six.vercel.app/api/recommend?sample=T01)를 요청마다 Python으로 실행 |
 | Netlify | [접수·배분](https://national-assembly-request-tool.netlify.app/assign.html) | 배포 시 Python 규칙 엔진으로 [결과 JSON](https://national-assembly-request-tool.netlify.app/generated/python-check.json)을 생성하고, [실시간 API 경로](https://national-assembly-request-tool.netlify.app/api/recommend?sample=T01)는 Vercel Python API로 전달 |
 
 두 서비스의 Python 예시는 `data/시험_요구문항_40건.csv`에 있는 **교육용 시험번호**만 받습니다. 실제 요구자료나 임의의 문항 내용을 서버로 보내는 API는 제공하지 않습니다. Vercel과 Netlify는 GitHub `main` 브랜치에 연결되어 이후 push하면 자동으로 다시 배포됩니다.
