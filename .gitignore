@@ -1,0 +1,18 @@
+# Local secrets
+.env
+.env.*
+
+# Installed packages and generated caches
+node_modules/
+__pycache__/
+*.py[cod]
+
+# Generated results and local checks
+result/
+results/
+output/
+outputs/
+결과/
+산출물/
+assign-check.png
+data/문항목록.csv
