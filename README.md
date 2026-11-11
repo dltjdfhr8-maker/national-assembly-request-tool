@@ -31,7 +31,7 @@ GitHub Pages는 `main` 브랜치의 `/ (root)`에서 제공됩니다. 웹 파일
 
 서버용 `api/app.js`와 상태 규칙 `web/flow.js`를 사용합니다. 브라우저 배분 화면과 서버는 같은 상태 규칙 함수를 사용합니다. `GET /api/app`은 문항 배열 전체를 읽고, `POST /api/app`은 접수·배분·회신·재배정요청·보완요청·확정과 AI 추천을 처리합니다. AI 추천은 요구내용만 OpenAI Chat Completions에 보내며 `gpt-4o-mini`, `temperature: 0`, JSON 응답을 사용합니다. 결과는 조직도 26개 과 안에서 최대 3개로 제한하고 최종 배분은 담당자가 확정합니다.
 
-서버는 비공개 Vercel Blob의 `cases.json` 하나를 사용하며 `BLOB_READ_WRITE_TOKEN`은 Vercel 프로젝트의 서버 환경변수에만 둡니다. AI 추천용 `OPENAI_API_KEY`도 Vercel 프로젝트 **Settings → Environment Variables**에 서버 환경변수로 설정합니다. 키가 없으면 추천 요청은 안내 문구와 함께 HTTP 500을 반환합니다. 키를 `web/`이나 GitHub에 넣지 마세요. Vercel 전체 주소는 Vercel 계정 접근 보호로 제한합니다. **과 선택 자체는 사용자 권한 확인이 아니므로 실제 자료를 입력하지 마세요.** 테스트는 `node test_api.js`와 `node test_validate.js`로 실행할 수 있습니다.
+서버는 비공개 Vercel Blob의 `cases.json` 하나를 사용하며 `BLOB_READ_WRITE_TOKEN`은 Vercel 프로젝트의 서버 환경변수에만 둡니다. AI 추천용 `OPENAI_API_KEY`도 Vercel 프로젝트 **Settings → Environment Variables**의 **Production**에 서버 환경변수로 설정하고 재배포해야 합니다. 키가 없으면 추천 요청은 안내 문구와 함께 HTTP 500을 반환합니다. 키를 `web/`이나 GitHub에 넣지 마세요. Vercel 전체 주소는 Vercel 계정 접근 보호로 제한합니다. **과 선택 자체는 사용자 권한 확인이 아니므로 실제 자료를 입력하지 마세요.** 테스트는 `node test_api.js`와 `node test_validate.js`로 실행할 수 있습니다.
 
 ## 현재 구현 범위
 
