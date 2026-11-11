@@ -30,27 +30,68 @@
     }
     return [...latest.values()];
   }
-  function missing(item) {
+  function repliedDepartments(item) {
     const replied = new Set(currentReplies(item).map(reply => reply.과));
+    if (item.상태 === '보완요청') replied.delete(item.보완?.at(-1)?.과);
+    return replied;
+  }
+  function missing(item) {
+    const replied = repliedDepartments(item);
     return assigned(item).filter(name => !replied.has(name));
   }
   function issueTexts(item) {
     return currentReplies(item).flatMap(reply => (reply.확인필요 || []).map(text => `${reply.과}: ${text}`));
+  }
+  function needsAction(item) {
+    return item.상태 === '회신완료' || (item.상태 === '회신중' && issueTexts(item).length > 0);
+  }
+  function matchesFilter(item, status, department) {
+    if (department && !assigned(item).includes(department)) return false;
+    if (status === 'actionable') return needsAction(item);
+    if (status === 'replied') {
+      const replied = repliedDepartments(item);
+      return department ? replied.has(department) : replied.size > 0;
+    }
+    if (status === 'missing') {
+      const absent = missing(item);
+      return department ? absent.includes(department) : absent.length > 0;
+    }
+    return status === 'all';
+  }
+  function filteredCases() {
+    const status = $('#reply-filter').value;
+    const department = $('#department-filter').value;
+    return cases.filter(item => matchesFilter(item, status, department));
+  }
+  function renderCards() {
+    const visible = filteredCases();
+    $('#review-count').textContent = `표시 ${visible.length}건 · 전체 ${cases.length}건`;
+    $('#case-reviews').replaceChildren(...(visible.length ? visible.map(caseCard)
+      : [el('div', $('#reply-filter').value === 'actionable'
+        ? '지금 조치할 문항이 없습니다. 회신 상태를 바꾸면 진행 중인 문항도 볼 수 있습니다.'
+        : '선택한 조건에 맞는 문항이 없습니다.', 'empty')]));
   }
   function caseCard(item) {
     const card = el('article', '', 'collect-card');
     const heading = el('h3', `${item.의원} · ${item.문항번호}번`, 'dept-card-title');
     heading.append(el('span', item.상태, `badge ${item.상태 === '확정' ? 'done' : 'pending'}`));
     card.append(heading, el('p', item.요구내용, 'dept-request'));
-    card.append(el('p', `주관 ${item.주관과 || '미배분'} · 협조 ${(item.협조과 || []).join(', ') || '없음'} · 회신 ${currentReplies(item).length}/${assigned(item).length}`, 'dept-meta'));
+    const focusedDepartment = $('#department-filter').value;
+    const replyCount = `${repliedDepartments(item).size}/${assigned(item).length}`;
+    const meta = focusedDepartment
+      ? `${focusedDepartment} ${repliedDepartments(item).has(focusedDepartment) ? '회신' : '미회신'} · 전체 회신 ${replyCount}`
+      : `주관 ${item.주관과 || '미배분'} · 협조 ${(item.협조과 || []).join(', ') || '없음'} · 회신 ${replyCount}`;
+    card.append(el('p', meta, 'dept-meta'));
     const absent = missing(item);
-    if (absent.length) card.append(el('p', `미회신 과: ${absent.join(', ')}`, 'reassign-note'));
+    if (absent.length && item.상태 !== '보완요청') {
+      card.append(el('p', `미회신 과: ${absent.join(', ')}`, 'reassign-note'));
+    }
     const issues = issueTexts(item);
     if (issues.length) {
       const list = el('ul', '', 'check-issues');
       for (const text of issues) list.append(el('li', text));
       card.append(el('p', `확인필요 ${issues.length}건`, 'review-title'), list);
-    } else card.append(el('p', '현재 회신의 확인필요 항목이 없습니다.', 'help'));
+    }
     if (item.확정코멘트) card.append(el('p', `확정 코멘트: ${item.확정코멘트}`, 'reply-saved'));
 
     if (['회신중', '회신완료'].includes(item.상태) && currentReplies(item).length) {
@@ -80,7 +121,11 @@
         } catch (error) { message(note, error.message, 'error'); button.disabled = false; }
       });
       form.append(selectLabel, reasonLabel, button, note);
-      card.append(form);
+      if (item.상태 === '회신완료') {
+        const details = el('details', '', 'card-action-details');
+        details.append(el('summary', '보완 요청'), form);
+        card.append(details);
+      } else card.append(form);
     }
     if (item.상태 === '보완요청' && item.보완?.length) {
       const last = item.보완.at(-1);
@@ -110,10 +155,11 @@
     }
     return card;
   }
-  function mergedRows(items) {
+  function mergedRows(items, department = '') {
     const rows = [];
     for (const item of items) {
       for (const reply of currentReplies(item)) {
+        if (department && reply.과 !== department) continue;
         const dataRows = reply.행?.length ? reply.행 : [{}];
         dataRows.forEach((row, index) => rows.push({
           id: item.id, 의원: item.의원, 문항번호: item.문항번호, 요구내용: item.요구내용,
@@ -128,7 +174,12 @@
   function renderMerged() {
     const body = $('#merged-body');
     body.replaceChildren();
-    for (const row of mergedRows(cases)) {
+    const status = $('#reply-filter').value;
+    const department = $('#department-filter').value;
+    const tableStatus = status === 'actionable' ? 'all' : status;
+    const rows = mergedRows(cases.filter(item => matchesFilter(item, tableStatus, department)), department);
+    $('#merged-count').textContent = `${status === 'actionable' ? '전체 ' : ''}${rows.length}행`;
+    for (const row of rows) {
       const tr = document.createElement('tr');
       for (const value of [`${row.의원} · ${row.문항번호}번`, row.회신과, row.연도,
         row['예산(천원)'], row['집행액(천원)'], row.비고,
@@ -177,8 +228,7 @@
       const fresh = await AppCommon.loadCases();
       if (version !== renderVersion) return;
       cases = fresh;
-      $('#case-reviews').replaceChildren(...(cases.length ? cases.map(caseCard)
-        : [el('div', '접수된 문항이 없습니다.', 'empty')]));
+      renderCards();
       renderMerged();
       renderStatus();
     } catch (error) { message($('#collect-message'), error.message, 'error'); }
@@ -230,8 +280,18 @@
     return `| ${keys.join(' | ')} |\n| ${keys.map(() => '---').join(' | ')} |\n${rows.map(row => `| ${keys.map(key => markdownCell(row[key])).join(' | ')} |`).join('\n')}`;
   }
 
+  if (typeof document === 'undefined' && typeof module === 'object' && module.exports) {
+    module.exports = { assigned, currentReplies, repliedDepartments, missing, needsAction, matchesFilter };
+    return;
+  }
   $('#storage-mode').textContent = AppCommon.storageLabel();
   $('#refresh').addEventListener('click', render);
+  for (const selector of ['#reply-filter', '#department-filter']) {
+    $(selector).addEventListener('change', () => { renderCards(); renderMerged(); });
+  }
+  $('#chart-details').addEventListener('toggle', event => {
+    if (event.target.open) requestAnimationFrame(() => chart?.resize());
+  });
   addEventListener('storage', render);
   addEventListener('cases-updated', render);
   $('#check-sample').addEventListener('click', async () => {
@@ -259,6 +319,14 @@
     const text = `# 국회 요구자료 제출본\n\n확정 문항 ${rows.list.length}건\n\n## 제출목록\n\n${markdownTable(rows.list)}\n\n## 문항별 취합표\n\n${markdownTable(rows.merged)}\n`;
     download('국회요구자료_제출본.md', text, 'text/markdown;charset=utf-8');
   });
-  AppCommon.loadData().then(result => { data = result; render(); })
+  AppCommon.loadData().then(result => {
+    data = result;
+    for (const name of data.departments) {
+      const option = el('option', name);
+      option.value = name;
+      $('#department-filter').append(option);
+    }
+    render();
+  })
     .catch(error => message($('#collect-message'), error.message, 'error'));
 })();

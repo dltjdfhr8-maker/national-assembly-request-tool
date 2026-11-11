@@ -14,21 +14,20 @@
     </nav>
   </div></header>
   <main class="shell">
-    <div class="hero"><div><span class="eyebrow">A부 · 국회 업무 총괄</span><h1>취합·검사·확정</h1><p>과별 회신과 확인필요를 살펴보고, 담당자가 보완 또는 확정을 결정합니다.</p></div><div class="hero-actions"><span class="hero-tag" id="storage-mode">저장 위치 확인 중</span></div></div>
+    <div class="hero"><div><span class="eyebrow">A부 · 국회 업무 총괄</span><h1>회신 검토·확정</h1><p>조치할 문항을 확인하고 보완을 요청하거나 확정합니다.</p></div><div class="hero-actions"><span class="hero-tag" id="storage-mode">저장 위치 확인 중</span></div></div>
     <section class="section" aria-labelledby="review-title">
-      <div class="section-head"><div><h2 id="review-title">① 검사·확정</h2><p>원본 값을 바꾸지 않고 이상 항목을 확인필요로 표시합니다.</p></div><button class="button" id="refresh" type="button">기록 새로고침</button></div>
-      <div class="section-body"><label class="field actor-field">총괄 담당자 표시<input id="actor" type="text" autocomplete="off" placeholder="처리 이력에 남길 담당 표시"></label><div id="collect-message" class="message" role="status" aria-live="polite"></div><div id="case-reviews" class="collect-cards"><div class="empty">문항을 읽는 중입니다.</div></div></div>
-      <div class="section-head"><div><h2>과별 회신 취합표</h2><p>현재 배분에서 제출된 최신 회신을 과별로 표시합니다.</p></div></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr><th>의원 · 문항</th><th>회신과</th><th>연도</th><th>예산(천원)</th><th>집행액(천원)</th><th>비고</th><th>문항별 자료</th><th>확인필요</th></tr></thead><tbody id="merged-body"></tbody></table></div>
+      <div class="section-head"><div><h2 id="review-title">① 조치할 문항</h2><p id="review-count">문항을 읽는 중입니다.</p></div><button class="button" id="refresh" type="button">새로고침</button></div>
+      <div class="section-body"><div class="review-toolbar"><label class="field actor-field">총괄 담당자<input id="actor" type="text" autocomplete="off" placeholder="처리 이력에 남길 담당 표시"></label><label class="field">회신 상태<select id="reply-filter"><option value="actionable">조치할 문항</option><option value="replied">회신 있음</option><option value="missing">미회신 과 있음</option><option value="all">전체 문항</option></select></label><label class="field">과별 보기<select id="department-filter"><option value="">전체 과</option></select></label></div><div id="collect-message" class="message" role="status" aria-live="polite"></div><div id="case-reviews" class="collect-cards"><div class="empty">문항을 읽는 중입니다.</div></div></div>
+      <details class="detail-panel" id="merged-details"><summary>과별 회신 취합표 <span id="merged-count" class="count-note"></span></summary><div class="table-wrap"><table class="data-table"><thead><tr><th>의원 · 문항</th><th>회신과</th><th>연도</th><th>예산(천원)</th><th>집행액(천원)</th><th>비고</th><th>문항별 자료</th><th>확인필요</th></tr></thead><tbody id="merged-body"></tbody></table></div></details>
     </section>
-    <section class="section" aria-labelledby="register-title">
-      <div class="section-head"><div><h2 id="register-title">② 검증용 접수대장 점검</h2><p>조직도 밖 과·기간 역전·기한·중복·공백 표기를 검사합니다.</p></div></div>
+    <details class="section detail-panel" id="sample-details">
+      <summary>② 검증용 접수대장 점검 <span class="count-note">교육용 CSV를 검사할 때 열기</span></summary>
       <div class="section-body"><div class="actions"><button class="button primary" id="check-sample" type="button">제공된 120건 점검</button><label class="field">다른 CSV 선택<input id="register-file" type="file" accept=".csv,text/csv"></label></div><div id="register-message" class="message" role="status" aria-live="polite"></div></div>
       <div class="table-wrap"><table class="data-table"><thead><tr><th>행</th><th>접수번호</th><th>항목</th><th>확인할 내용</th></tr></thead><tbody id="register-issues"></tbody></table></div>
-    </section>
+    </details>
     <section class="section" aria-labelledby="export-title">
       <div class="section-head"><div><h2 id="export-title">③ 현황·제출본</h2><p>확정된 문항만 제출본 파일에 포함합니다. 파일을 만드는 동작은 국회 제출이 아닙니다.</p></div><div class="actions"><button class="button primary" id="export-xlsx" type="button" disabled>제출본 엑셀</button><button class="button" id="export-md" type="button" disabled>제출본 Markdown</button></div></div>
-      <div class="section-body"><div class="status-grid" id="status-grid"></div><div class="chart-box"><canvas id="department-chart" role="img" aria-label="과별 배분 문항 수 막대 차트"></canvas></div><p id="export-note" class="help">현황을 읽는 중입니다.</p></div>
+      <div class="section-body"><div class="status-grid" id="status-grid"></div><p id="export-note" class="help">현황을 읽는 중입니다.</p><details class="detail-panel chart-panel" id="chart-details"><summary>과별 차트 보기</summary><div class="chart-box"><canvas id="department-chart" role="img" aria-label="과별 배분 문항 수 막대 차트"></canvas></div></details></div>
     </section>
     <p class="foot">확인필요는 사람이 검토합니다. 실제 요구자료는 내부 시스템에서만 처리하세요.</p>
   </main>
