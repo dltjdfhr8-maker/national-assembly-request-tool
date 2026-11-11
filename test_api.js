@@ -37,6 +37,43 @@ async function main() {
   const primary = org[0].과;
   const helper = org[1].과;
   const outsider = org[2].과;
+  const aiRequest = { 작업: 'AI추천', 요구내용: '가상 디지털 사업 소관 확인' };
+  const aiPost = async (client, body = aiRequest) => {
+    const response = await client.POST(new Request('http://local/api/app', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    }));
+    return { status: response.status, body: await response.json() };
+  };
+  let aiCalls = 0;
+  const aiFetch = async (url, options) => {
+    aiCalls++;
+    assert.equal(url, 'https://api.openai.com/v1/chat/completions');
+    const sent = JSON.parse(options.body);
+    assert.equal(sent.model, 'gpt-4o-mini');
+    assert.equal(sent.temperature, 0);
+    assert.deepEqual(sent.response_format, { type: 'json_object' });
+    assert.equal(sent.messages[1].content, aiRequest.요구내용);
+    assert.equal(options.headers.Authorization, 'Bearer test-key');
+    return Response.json({ choices: [{ message: { content: JSON.stringify({
+      후보: [{ 과: primary, 근거: '가상 사업 소관입니다. 추가 문장입니다.' },
+        { 과: '조직도밖과', 근거: '제거 대상입니다.' }, { 과: helper, 근거: '협조 업무입니다.' },
+        { 과: primary, 근거: '중복입니다.' }], 해당없음: false,
+    }) } }] });
+  };
+  const aiStoreReads = store.reads;
+  const aiResult = await aiPost(createApp(store, { fetchImpl: aiFetch, apiKey: 'test-key' }));
+  assert.equal(aiResult.status, 200);
+  assert.deepEqual(aiResult.body, { 후보: [{ 과: primary, 근거: '가상 사업 소관입니다.' },
+    { 과: helper, 근거: '협조 업무입니다.' }], 해당없음: false });
+  assert.equal(aiCalls, 1);
+  const noMatch = await aiPost(createApp(store, { fetchImpl: async () => Response.json({
+    choices: [{ message: { content: JSON.stringify({ 후보: [], 해당없음: true }) } }],
+  }), apiKey: 'test-key' }));
+  assert.deepEqual(noMatch, { status: 200, body: { 후보: [], 해당없음: true } });
+  const noKey = await aiPost(createApp(store, { fetchImpl: () => { throw new Error('호출되면 안 됨'); }, apiKey: '' }));
+  assert.equal(noKey.status, 500);
+  assert.match(noKey.body.error, /OPENAI_API_KEY/);
+  assert.equal(store.reads, aiStoreReads);
   const post = async body => {
     const response = await app.POST(new Request('http://local/api/app', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -44,6 +81,7 @@ async function main() {
     return { status: response.status, body: await response.json() };
   };
   let checks = 1;
+  checks += 3;
   async function expect(body, status, state) {
     const before = store.writes;
     const result = await post(body);
@@ -117,6 +155,11 @@ async function main() {
   assert.equal(store.cases.length, 21);
   assert.equal(store.reads - readsBeforeBatch, 2);
   checks += 3;
+  const aiId = `${row.파일명}::3`;
+  await expect({ 작업: '배분', 담당자: actor, id: aiId, 주관과: primary, 협조과: [],
+    확정방법: 'AI', 후보: [{ 과: primary, 근거: '가상 사업 소관입니다.', 출처: 'AI' }] }, 200, '배분확정');
+  assert.equal(store.cases.find(item => item.id === aiId).후보[0].출처, 'AI');
+  checks++;
   await expect({ 작업: '접수일괄', 요청목록: [{ 작업: '배분' }] }, 400);
   await expect({ 작업: '접수일괄', 요청목록: [batch[0], batch[0]] }, 409);
   const malformed = await app.POST(new Request('http://local/api/app', { method: 'POST', body: '{' }));
@@ -146,6 +189,31 @@ async function main() {
     assert.deepEqual(registered, { added: 19, duplicates: 0 });
     assert.equal(postCount, 1);
     checks += 2;
+    global.fetch = async (url, options) => {
+      assert.equal(url, '/api/app');
+      assert.deepEqual(JSON.parse(options.body), aiRequest);
+      return Response.json({ 후보: [{ 과: primary, 근거: '가상 사업 소관입니다.' }], 해당없음: false });
+    };
+    const recommendation = await common.recommend(aiRequest.요구내용);
+    assert.equal(recommendation.후보[0].과, primary);
+    checks++;
+    const remoteCases = [];
+    const aiRow = { ...row, 문항번호: 'AI시험' };
+    Flow.apply(remoteCases, { 작업: '접수', 담당자: actor, 문항: aiRow }, org);
+    global.fetch = async (url, options) => {
+      if (options?.method === 'POST') {
+        const body = JSON.parse(options.body);
+        assert.equal(body.확정방법, 'AI');
+        const changed = Flow.apply(remoteCases, body, org);
+        return Response.json({ ok: true, id: changed.id, 상태: changed.상태 });
+      }
+      return Response.json(remoteCases);
+    };
+    const confirmed = await common.confirm(`${aiRow.파일명}::${aiRow.문항번호}`, primary, [], actor,
+      '', org, [{ 과: primary, 근거: '가상 사업 소관입니다.', 출처: 'AI' }]);
+    assert.equal(confirmed.확정방법, 'AI');
+    assert.equal(confirmed.후보[0].출처, 'AI');
+    checks++;
   } finally {
     global.location = priorLocation;
     global.fetch = priorFetch;

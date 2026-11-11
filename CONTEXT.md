@@ -26,7 +26,7 @@
 | 현업 회신 화면 | web/dept.html, web/dept.js | 내 과 선택, 회신 엑셀 읽기·기본 점검·제출, 재배정 요청 |
 | 취합·검사 화면 | web/collect.html, web/collect.js, web/validate.js | 확인필요·미회신 과, 보완요청·확정, 검증용 접수대장 점검, 제출본 엑셀·Markdown |
 | 과별 배분 현황 | web/dashboard.js, web/index.html | 상태별 건수와 과별 차트·정렬 표·엑셀 내보내기 |
-| 상태 변경·서버 API | web/flow.js, api/app.js, api/org.json, test_api.js | 접수·배분·회신·재배정요청 상태 규칙, 비공개 Blob 저장 코드와 가짜 저장소 시험. `*.vercel.app` 화면은 `/api/app`, 다른 주소는 브라우저 저장 사용 |
+| 상태 변경·서버 API | web/flow.js, api/app.js, api/org.json, test_api.js | 접수·배분·회신·재배정요청·보완요청·확정 상태 규칙, 규칙 후보가 없을 때 OpenAI 추천, 비공개 Blob 저장과 가짜 응답 시험. `*.vercel.app` 화면은 `/api/app`, 다른 주소는 브라우저 저장 사용 |
 | 화면용 보강 규칙·조직도 | web/data/rules_보강.csv, web/data/A부_조직도_26개과.csv | 브라우저에서 읽는 배분 기준과 허용 과 목록. 원본은 data/에 유지 |
 | 화면용 과거 이력 | web/data/접수대장.csv | 원본 520건의 읽기 전용 복사본. 1순위 근거 키워드로 검색 |
 | 화면용 검증 자료 | web/data/검증용_접수대장.csv | 원본 120건의 읽기 전용 복사본. 검사 항목 확인용 |

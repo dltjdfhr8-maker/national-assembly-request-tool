@@ -80,6 +80,17 @@
     saveCases(cases);
     return { ok: true, id: item.id, 상태: item.상태 };
   }
+  async function recommend(requirement) {
+    if (!remote) throw new Error('AI 추천은 Vercel 공유 저장 화면에서만 사용할 수 있습니다.');
+    const response = await fetch('/api/app', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 작업: 'AI추천', 요구내용: requirement }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || `AI 추천에 실패했습니다. (${response.status})`);
+    if (!Array.isArray(body.후보) || typeof body.해당없음 !== 'boolean') {
+      throw new Error('AI 추천 응답의 형식을 확인할 수 없습니다.');
+    }
+    return body;
+  }
   async function getUpdatedItem(id) {
     const item = (await loadCases()).find(row => row.id === id);
     if (!item) throw new Error('저장된 문항을 찾지 못했습니다. 새로고침해 주세요.');
@@ -111,15 +122,18 @@
     const cases = structuredClone(await loadCases());
     const seen = new Set();
     const changes = [];
-    for (const { id, primary, helpers, reason = '' } of selections) {
+    for (const { id, primary, helpers, reason = '', aiCandidates = [] } of selections) {
       if (seen.has(id)) throw new Error('같은 문항이 중복 선택되었습니다.');
       seen.add(id);
       const previous = cases.find(item => item.id === id);
       const before = JSON.stringify(previous);
+      const candidates = aiCandidates.length ? aiCandidates : (previous?.후보 || []);
+      const aiMatch = candidates.some(candidate => candidate.출처 === 'AI' && candidate.과 === primary);
       const method = previous?.상태 === '재배정요청' || previous?.상태 === '배분확정'
-        || primary !== previous?.후보?.[0]?.과 ? '수정' : '규칙';
+        ? '수정' : aiMatch ? 'AI' : primary === previous?.후보?.[0]?.과 ? '규칙' : '수정';
       const request = { 작업: '배분', id, 주관과: primary, 협조과: helpers,
         확정방법: method, 담당자: actor, 사유: reason };
+      if (!previous?.후보?.length && aiCandidates.length) request.후보 = aiCandidates;
       const item = flow.apply(cases, request, departments);
       if (JSON.stringify(item) !== before) changes.push(request);
     }
@@ -131,8 +145,8 @@
     if (changes.length) saveCases(cases);
     return { items: selections.map(({ id }) => cases.find(item => item.id === id)), changedCount: changes.length };
   }
-  async function confirm(id, primary, helpers, actor, reason, departments) {
-    return (await confirmMany([{ id, primary, helpers, reason }], actor, departments)).items[0];
+  async function confirm(id, primary, helpers, actor, reason, departments, aiCandidates = []) {
+    return (await confirmMany([{ id, primary, helpers, reason, aiCandidates }], actor, departments)).items[0];
   }
   async function cancelAssignment(id, actor, reason, departments) {
     await postAction({ 작업: '배분취소', id, 담당자: actor, 사유: reason }, departments);
@@ -195,7 +209,7 @@
     return rows.map(row => Object.fromEntries(COLUMNS.map(column => [column, row[column]])));
   }
   return { COLUMNS, isRemote: remote, storageLabel, loadData, loadCases, saveCases, resetCases,
-    postAction, register, confirm, confirmMany, cancelAssignment, reply, requestReassignment,
+    postAction, recommend, register, confirm, confirmMany, cancelAssignment, reply, requestReassignment,
     requestSupplement, confirmCase,
     historyFor, historyNode, parseQuestionCsv };
 });

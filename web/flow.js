@@ -60,6 +60,7 @@
       if (Number.isFinite(source.점수)) result.점수 = source.점수;
       if (typeof source.근거키워드 === 'string') result.근거키워드 = source.근거키워드;
       if (typeof source.근거 === 'string') result.근거 = source.근거;
+      if (source.출처 === 'AI') result.출처 = 'AI';
       return result;
     });
   }
@@ -122,6 +123,13 @@
         .filter(name => name !== primary);
       const method = required(request.확정방법, '확정방법');
       if (!METHODS.has(method)) fail(400, '확정방법은 규칙·AI·수정 중 하나여야 합니다.');
+      const aiCandidates = !item.후보.length && request.후보 !== undefined
+        ? cleanCandidates(request.후보, names) : [];
+      if (aiCandidates.some(candidate => candidate.출처 !== 'AI')) fail(400, 'AI 후보의 출처를 확인해 주세요.');
+      const basis = aiCandidates.length ? aiCandidates : item.후보;
+      if (method === 'AI' && !basis.some(candidate => candidate.출처 === 'AI' && candidate.과 === primary)) {
+        fail(400, '선택한 과가 AI 후보에 없습니다.');
+      }
       const changed = item.주관과 !== primary || JSON.stringify(item.협조과 || []) !== JSON.stringify(helpers);
       const reason = typeof request.사유 === 'string' ? request.사유.trim() : '';
       if (item.상태 === '배분확정' && changed && !reason) fail(400, '재배분 사유를 입력해 주세요.');
@@ -131,6 +139,7 @@
       item.상태 = '배분확정';
       item.주관과 = primary;
       item.협조과 = helpers;
+      if (aiCandidates.length) item.후보 = aiCandidates;
       item.확정방법 = method;
       item.회신 = Array.isArray(item.회신) ? item.회신 : [];
       log(item, actor, previous ? '재배분' : '배분확정', reason || '담당자 배분 확인',

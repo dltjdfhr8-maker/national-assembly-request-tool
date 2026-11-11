@@ -5,7 +5,10 @@ let data = null;
 let staged = [];
 let checks = [];
 const selectedIds = new Set();
+const aiSuggestions = new Map();
 let renderVersion = 0;
+
+function shownCandidates(item) { return item.후보.length ? item.후보 : (aiSuggestions.get(item.id) || []); }
 
 function updateSelection() {
   const boxes = [...document.querySelectorAll('#assign-body .row-select:not(:disabled)')];
@@ -161,7 +164,7 @@ function makeSelect(item) {
     option.textContent = dept;
     select.append(option);
   }
-  select.value = item.주관과 || item.후보[0]?.과 || '';
+  select.value = item.주관과 || shownCandidates(item)[0]?.과 || '';
   return select;
 }
 
@@ -214,29 +217,51 @@ async function renderAssign() {
       content.append(notice);
     }
     const candidates = cell(tr, '');
-    if (!item.후보.length) {
+    const suggestions = shownCandidates(item);
+    if (!suggestions.length) {
       const note = document.createElement('span');
       note.className = 'badge review';
-      note.textContent = '확인필요 · 후보 없음';
+      note.textContent = aiSuggestions.has(item.id) ? 'AI 해당없음 · 직접 판단' : '확인필요 · 후보 없음';
       candidates.append(note);
     } else {
-      item.후보.forEach((candidate, i) => {
+      suggestions.forEach((candidate, i) => {
         const line = document.createElement('span');
-        line.className = 'candidate';
+        line.className = `candidate${candidate.출처 === 'AI' ? ' ai' : ''}`;
         const rank = document.createElement('b');
         rank.textContent = `${i + 1}순위 `;
-        line.append(rank, document.createTextNode(`${candidate.과} · ${candidate.점수}점 `));
+        line.append(rank, document.createTextNode(candidate.과 +
+          (Number.isFinite(candidate.점수) ? ` · ${candidate.점수}점 ` : ' ')));
         const evidence = document.createElement('small');
-        evidence.textContent = `(${candidate.근거키워드})`;
+        evidence.textContent = candidate.출처 === 'AI' ? `AI · ${candidate.근거}`
+          : `(${candidate.근거키워드 || candidate.근거 || '근거 확인필요'})`;
         line.append(evidence);
         candidates.append(line);
       });
-      if (item.후보.length > 1 && item.후보[0].점수 === item.후보[1].점수) {
+      if (suggestions.length > 1 && Number.isFinite(suggestions[0].점수)
+        && suggestions[0].점수 === suggestions[1].점수) {
         const note = document.createElement('span');
         note.className = 'badge review';
         note.textContent = '동점 · 확인필요';
         candidates.append(note);
       }
+    }
+    if (!item.후보.length && AppCommon.isRemote && ['접수', '재배정요청'].includes(item.상태)) {
+      const aiButton = document.createElement('button');
+      aiButton.type = 'button';
+      aiButton.className = 'button ai-action';
+      aiButton.textContent = aiSuggestions.has(item.id) ? 'AI 다시 추천' : 'AI 추천';
+      aiButton.addEventListener('click', async () => {
+        try {
+          aiButton.disabled = true;
+          const result = await AppCommon.recommend(item.요구내용);
+          aiSuggestions.set(item.id, result.후보.map(candidate => ({ ...candidate, 출처: 'AI' })));
+          message('#assign-message', result.해당없음
+            ? 'AI도 소관 과를 찾지 못했습니다. 담당자가 직접 판단해 주세요.'
+            : `${result.후보.length}개 AI 후보를 표시했습니다. 담당자가 과를 확정해 주세요.`, 'success');
+          await renderAssign();
+        } catch (error) { message('#assign-message', error.message, 'error'); aiButton.disabled = false; }
+      });
+      candidates.append(aiButton);
     }
     candidates.append(AppCommon.historyNode(item, data.history));
     const assignment = cell(tr, '', 'assign-cell');
@@ -289,8 +314,10 @@ async function renderAssign() {
       try {
         button.disabled = true;
         const helpers = [...list.querySelectorAll('input:checked')].map(box => box.value);
-        const result = await AppCommon.confirm(item.id, primary.value, helpers, $('#actor').value, reason.value, data.departments);
+        const result = await AppCommon.confirm(item.id, primary.value, helpers, $('#actor').value,
+          reason.value, data.departments, aiSuggestions.get(item.id) || []);
         message('#assign-message', `${result.의원} ${result.문항번호}번: ${result.주관과} 배분을 확정했습니다. (${result.확정방법})`, 'success');
+        aiSuggestions.delete(item.id);
         selectedIds.clear();
         await renderAssign();
       } catch (error) { message('#assign-message', error.message, 'error'); button.disabled = false; }
@@ -347,9 +374,11 @@ $('#confirm-selected').addEventListener('click', async () => {
         primary: row.querySelector('.primary-select').value,
         helpers: [...row.querySelectorAll('.helper-list input:checked')].map(box => box.value),
         reason: row.querySelector('.reason-input').value,
+        aiCandidates: aiSuggestions.get(row.dataset.id) || [],
       }));
     const result = await AppCommon.confirmMany(selections, $('#actor').value, data.departments);
     message('#assign-message', `${result.changedCount}문항의 배분을 확정했습니다.`, 'success');
+    selections.forEach(({ id }) => aiSuggestions.delete(id));
     selectedIds.clear();
     await renderAssign();
   } catch (error) { message('#assign-message', error.message, 'error'); updateSelection(); }
@@ -360,6 +389,7 @@ $('#reset-cases').addEventListener('click', async () => {
     if (!confirm(`이 브라우저에 저장된 문항 ${count}건과 배분 이력을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
     AppCommon.resetCases();
     selectedIds.clear();
+    aiSuggestions.clear();
     staged = [];
     checks = [];
     $('#pdf-files').value = '';
