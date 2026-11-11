@@ -57,14 +57,15 @@ async function main() {
     return Response.json({ choices: [{ message: { content: JSON.stringify({
       후보: [{ 과: primary, 근거: '가상 사업 소관입니다. 추가 문장입니다.' },
         { 과: '조직도밖과', 근거: '제거 대상입니다.' }, { 과: helper, 근거: '협조 업무입니다.' },
-        { 과: primary, 근거: '중복입니다.' }], 해당없음: false,
+        { 과: primary, 근거: '중복입니다.' }, { 과: outsider, 근거: '추가 소관입니다.' },
+        { 과: org[3].과, 근거: '네 번째 후보입니다.' }], 해당없음: false,
     }) } }] });
   };
   const aiStoreReads = store.reads;
   const aiResult = await aiPost(createApp(store, { fetchImpl: aiFetch, apiKey: 'test-key' }));
   assert.equal(aiResult.status, 200);
   assert.deepEqual(aiResult.body, { 후보: [{ 과: primary, 근거: '가상 사업 소관입니다.' },
-    { 과: helper, 근거: '협조 업무입니다.' }], 해당없음: false });
+    { 과: helper, 근거: '협조 업무입니다.' }, { 과: outsider, 근거: '추가 소관입니다.' }], 해당없음: false });
   assert.equal(aiCalls, 1);
   const noMatch = await aiPost(createApp(store, { fetchImpl: async () => Response.json({
     choices: [{ message: { content: JSON.stringify({ 후보: [], 해당없음: true }) } }],
