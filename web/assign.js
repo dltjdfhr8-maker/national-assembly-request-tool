@@ -385,18 +385,24 @@ $('#confirm-selected').addEventListener('click', async () => {
 });
 $('#reset-cases').addEventListener('click', async () => {
   try {
-    const count = (await AppCommon.loadCases()).length;
-    if (!confirm(`이 브라우저에 저장된 문항 ${count}건과 배분 이력을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
-    AppCommon.resetCases();
+    if (!AppCommon.isRemote) {
+      const count = (await AppCommon.loadCases()).length;
+      if (!confirm(`이 브라우저에 저장된 문항 ${count}건과 배분 이력을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
+      AppCommon.resetCases();
+    }
     selectedIds.clear();
     aiSuggestions.clear();
     staged = [];
     checks = [];
     $('#pdf-files').value = '';
     $('#csv-file').value = '';
+    $('#actor').value = '';
+    $('#filter').value = '';
     renderPreview();
     await renderAssign();
-    message('#assign-message', '이 브라우저의 접수·배분 기록을 초기화했습니다.', 'success');
+    message('#assign-message', AppCommon.isRemote
+      ? '입력·미리보기·선택을 초기화했습니다. 공동 기록과 처리 이력은 그대로 있습니다.'
+      : '이 브라우저의 접수·배분 기록을 초기화했습니다.', 'success');
     message('#receive-message', '');
   } catch (error) { message('#assign-message', error.message, 'error'); }
 });
@@ -416,7 +422,10 @@ addEventListener('storage', renderAssign);
 addEventListener('cases-updated', renderAssign);
 
 $('#storage-mode').textContent = AppCommon.storageLabel();
-$('#reset-cases').hidden = AppCommon.isRemote;
+if (AppCommon.isRemote) {
+  $('#reset-cases').textContent = '입력·미리보기 초기화';
+  $('#reset-cases').classList.remove('danger');
+}
 try {
   data = await AppCommon.loadData();
   $('#data-status').textContent = '보강 기준표 · 26개 과 · 과거 520건 읽음';
