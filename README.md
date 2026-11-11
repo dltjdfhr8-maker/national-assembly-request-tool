@@ -13,9 +13,9 @@
 |---|---|---|
 | GitHub Pages | [교육용 화면](https://dltjdfhr8-maker.github.io/national-assembly-request-tool/web/assign.html) | 정적 파일 제공 |
 | Vercel | [시작 화면](https://national-assembly-request-tool-six.vercel.app/) · [접수·배분](https://national-assembly-request-tool-six.vercel.app/web/assign.html) · [현업 회신](https://national-assembly-request-tool-six.vercel.app/web/dept.html) · [취합](https://national-assembly-request-tool-six.vercel.app/web/collect.html) | 계정 접근 보호 아래 Python 추천 API, `/api/app` 서버 함수와 비공개 Blob 저장 |
-| Netlify | [접수·배분](https://national-assembly-request-tool.netlify.app/assign.html) | 배포 시 Python 규칙 엔진으로 40개 교육용 결과를 만들고 자체 함수가 `/api/recommend?sample=T01`로 제공. 화면 기록은 브라우저에 저장 |
+| Netlify | [접수·배분](https://national-assembly-request-tool.netlify.app/assign.html) | 업무 화면 주소는 Vercel의 보호된 화면으로 이동하므로 같은 AI 추천·공유 기록을 사용. 자체 `/api/recommend?sample=T01`은 교육용 시험번호 결과를 제공 |
 
-Python 예시는 `data/시험_요구문항_40건.csv`에 있는 **교육용 시험번호**만 받습니다. Vercel과 Netlify는 GitHub `main` 브랜치에 연결되어 이후 push하면 자동으로 다시 배포됩니다.
+Python 예시는 `data/시험_요구문항_40건.csv`에 있는 **교육용 시험번호**만 받습니다. Vercel과 Netlify는 GitHub `main` 브랜치에 연결되어 이후 push하면 자동으로 다시 배포됩니다. Netlify의 업무 화면 주소를 열면 Vercel 로그인 화면을 거쳐 Vercel 화면으로 이동하며, 두 주소는 별도 기록을 만들지 않습니다.
 
 GitHub Pages는 `main` 브랜치의 `/ (root)`에서 제공됩니다. 웹 파일은 `web/`에 그대로 있으며, 주소 끝에 `/web/` 또는 `/web/assign.html`을 붙여 엽니다.
 
