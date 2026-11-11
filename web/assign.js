@@ -12,9 +12,12 @@ function shownCandidates(item) { return item.후보.length ? item.후보 : (aiSu
 
 function updateSelection() {
   const boxes = [...document.querySelectorAll('#assign-body .row-select:not(:disabled)')];
-  const selected = boxes.filter(box => box.checked).length;
+  const selectedBoxes = boxes.filter(box => box.checked);
+  const selected = selectedBoxes.length;
   $('#selected-count').textContent = `선택 ${selected}건`;
   $('#confirm-selected').disabled = selected === 0;
+  $('#cancel-selected').disabled = selected === 0
+    || selectedBoxes.some(box => box.closest('tr').dataset.state !== '배분확정');
   $('#select-all').checked = boxes.length > 0 && selected === boxes.length;
   $('#select-all').indeterminate = selected > 0 && selected < boxes.length;
 }
@@ -187,6 +190,7 @@ async function renderAssign() {
   for (const item of visible) {
     const tr = tbody.insertRow();
     tr.dataset.id = item.id;
+    tr.dataset.state = item.상태;
     const selection = cell(tr, '');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -364,6 +368,15 @@ $('#select-all').addEventListener('change', event => {
   });
   updateSelection();
 });
+$('#select-confirmed').addEventListener('click', () => {
+  selectedIds.clear();
+  document.querySelectorAll('#assign-body tr[data-id]').forEach(row => {
+    const box = row.querySelector('.row-select');
+    box.checked = row.dataset.state === '배분확정' && !box.disabled;
+    if (box.checked) selectedIds.add(row.dataset.id);
+  });
+  updateSelection();
+});
 $('#confirm-selected').addEventListener('click', async () => {
   try {
     $('#confirm-selected').disabled = true;
@@ -382,6 +395,28 @@ $('#confirm-selected').addEventListener('click', async () => {
     selectedIds.clear();
     await renderAssign();
   } catch (error) { message('#assign-message', error.message, 'error'); updateSelection(); }
+});
+$('#cancel-selected').addEventListener('click', async () => {
+  const button = $('#cancel-selected');
+  try {
+    button.disabled = true;
+    const rows = [...document.querySelectorAll('#assign-body tr[data-id]')]
+      .filter(row => row.querySelector('.row-select').checked);
+    if (!rows.length || rows.some(row => row.dataset.state !== '배분확정')) {
+      throw new Error('배분확정 상태의 문항만 선택해 주세요.');
+    }
+    const actor = $('#actor').value.trim();
+    const reason = $('#cancel-reason').value.trim();
+    if (!actor) throw new Error('담당자를 입력해 주세요.');
+    if (!reason) throw new Error('공통 취소 사유를 입력해 주세요.');
+    if (!confirm(`선택한 ${rows.length}문항의 배분을 취소하고 접수 상태로 되돌릴까요? 각 문항의 이력은 유지됩니다.`)) return;
+    const result = await AppCommon.cancelMany(rows.map(row => row.dataset.id), actor, reason, data.departments);
+    selectedIds.clear();
+    $('#cancel-reason').value = '';
+    await renderAssign();
+    message('#assign-message', `${result.cancelled}문항의 배분을 취소했습니다.`, 'success');
+  } catch (error) { message('#assign-message', error.message, 'error'); }
+  finally { updateSelection(); }
 });
 $('#reset-cases').addEventListener('click', async () => {
   try {

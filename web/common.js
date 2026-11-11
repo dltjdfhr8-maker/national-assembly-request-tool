@@ -152,6 +152,17 @@
     await postAction({ 작업: '배분취소', id, 담당자: actor, 사유: reason }, departments);
     return getUpdatedItem(id);
   }
+  async function cancelMany(ids, actor, reason, departments) {
+    if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length) {
+      throw new Error('취소할 문항을 중복 없이 선택해 주세요.');
+    }
+    const requests = ids.map(id => ({ 작업: '배분취소', id, 담당자: actor, 사유: reason }));
+    if (remote) return postAction({ 작업: '배분취소일괄', 요청목록: requests }, departments);
+    const cases = structuredClone(await loadCases());
+    for (const request of requests) flow.apply(cases, request, departments);
+    saveCases(cases);
+    return { ok: true, cancelled: requests.length };
+  }
   async function reply(id, dept, actor, fileName, rows, memo, checks, departments) {
     await postAction({ 작업: '회신', id, 과: dept, 담당자: actor, 파일명: fileName,
       행: rows, 메모: memo, 확인필요: checks }, departments);
@@ -209,7 +220,7 @@
     return rows.map(row => Object.fromEntries(COLUMNS.map(column => [column, row[column]])));
   }
   return { COLUMNS, isRemote: remote, storageLabel, loadData, loadCases, saveCases, resetCases,
-    postAction, recommend, register, confirm, confirmMany, cancelAssignment, reply, requestReassignment,
+    postAction, recommend, register, confirm, confirmMany, cancelAssignment, cancelMany, reply, requestReassignment,
     requestSupplement, confirmCase,
     historyFor, historyNode, parseQuestionCsv };
 });

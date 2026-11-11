@@ -55,11 +55,13 @@ function isBlobConflict(error) {
 }
 
 function actionsFor(body) {
-  if (body?.작업 !== '접수일괄') return [body];
+  const action = body?.작업 === '접수일괄' ? '접수'
+    : body?.작업 === '배분취소일괄' ? '배분취소' : null;
+  if (!action) return [body];
   const actions = body.요청목록;
   if (!Array.isArray(actions) || !actions.length || actions.length > 500
-    || actions.some(action => action?.작업 !== '접수')) {
-    throw new Flow.FlowError(400, '접수 문항 목록을 확인해 주세요.');
+    || actions.some(item => item?.작업 !== action)) {
+    throw new Flow.FlowError(400, `${action === '접수' ? '접수' : '배분 취소'} 문항 목록을 확인해 주세요.`);
   }
   return actions;
 }
@@ -147,9 +149,9 @@ export function createApp(store, { fetchImpl = globalThis.fetch, apiKey = proces
             await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
             continue;
           }
-          return body?.작업 === '접수일괄'
-            ? json({ ok: true, added: items.length })
-            : json({ ok: true, id: items[0].id, 상태: items[0].상태 });
+          if (body?.작업 === '접수일괄') return json({ ok: true, added: items.length });
+          if (body?.작업 === '배분취소일괄') return json({ ok: true, cancelled: items.length });
+          return json({ ok: true, id: items[0].id, 상태: items[0].상태 });
         }
       } catch (error) { return errorResponse(error); }
     },

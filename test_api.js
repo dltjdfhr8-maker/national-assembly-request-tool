@@ -161,6 +161,28 @@ async function main() {
     확정방법: 'AI', 후보: [{ 과: primary, 근거: '가상 사업 소관입니다.', 출처: 'AI' }] }, 200, '배분확정');
   assert.equal(store.cases.find(item => item.id === aiId).후보[0].출처, 'AI');
   checks++;
+  const cancel = id => ({ 작업: '배분취소', 담당자: actor, id, 사유: '일괄 재검토' });
+  const aiLogCount = store.cases.find(item => item.id === aiId).log.length;
+  await expect({ 작업: '배분취소일괄', 요청목록: [cancel(aiId), cancel(id2)] }, 409);
+  assert.equal(store.cases.find(item => item.id === aiId).상태, '배분확정');
+  assert.equal(store.cases.find(item => item.id === aiId).log.length, aiLogCount);
+  checks += 2;
+  await expect({ 작업: '배분취소일괄', 요청목록: [cancel(aiId), cancel(aiId)] }, 409);
+  await expect({ 작업: '배분취소일괄', 요청목록: [{ ...cancel(aiId), 사유: '' }] }, 400);
+  await expect({ 작업: '배분취소일괄', 요청목록: [{ 작업: '배분', id: aiId }] }, 400);
+  await expect({ 작업: '배분', 담당자: actor, id: id2, 주관과: primary,
+    협조과: [], 확정방법: '수정' }, 200, '배분확정');
+  store.transientConflicts = 1;
+  const cancelled = await expect({ 작업: '배분취소일괄', 요청목록: [cancel(aiId), cancel(id2)] }, 200);
+  assert.equal(cancelled.body.cancelled, 2);
+  for (const caseId of [aiId, id2]) {
+    const item = store.cases.find(row => row.id === caseId);
+    assert.equal(item.상태, '접수');
+    assert.equal(item.log.at(-1).작업, '배분취소');
+    assert.equal(item.log.at(-1).사유, '일괄 재검토');
+    assert.equal(item.log.at(-1).담당자, actor);
+  }
+  checks += 9;
   await expect({ 작업: '접수일괄', 요청목록: [{ 작업: '배분' }] }, 400);
   await expect({ 작업: '접수일괄', 요청목록: [batch[0], batch[0]] }, 409);
   const malformed = await app.POST(new Request('http://local/api/app', { method: 'POST', body: '{' }));
@@ -215,9 +237,55 @@ async function main() {
     assert.equal(confirmed.확정방법, 'AI');
     assert.equal(confirmed.후보[0].출처, 'AI');
     checks++;
+    global.fetch = async (url, options) => {
+      assert.equal(url, '/api/app');
+      assert.equal(options.method, 'POST');
+      const body = JSON.parse(options.body);
+      assert.equal(body.작업, '배분취소일괄');
+      assert.deepEqual(body.요청목록, [{ 작업: '배분취소', id: remoteCases[0].id,
+        담당자: actor, 사유: '일괄 재검토' }]);
+      return Response.json({ ok: true, cancelled: 1 });
+    };
+    const remoteCancelled = await common.cancelMany([remoteCases[0].id], actor, '일괄 재검토', org);
+    assert.equal(remoteCancelled.cancelled, 1);
+    checks += 2;
   } finally {
     global.location = priorLocation;
     global.fetch = priorFetch;
+  }
+  const priorStorage = global.localStorage;
+  const storage = new Map();
+  global.location = { hostname: 'localhost' };
+  global.localStorage = {
+    getItem: key => storage.get(key) ?? null,
+    setItem: (key, value) => storage.set(key, value),
+    removeItem: key => storage.delete(key),
+  };
+  const commonPath = require.resolve('./web/common.js');
+  delete require.cache[commonPath];
+  try {
+    const localCommon = require('./web/common.js');
+    const localCases = [];
+    const localIds = ['로컬1', '로컬2'].map(number => {
+      const item = Flow.apply(localCases, { 작업: '접수', 담당자: actor,
+        문항: { ...row, 문항번호: number } }, org);
+      Flow.apply(localCases, { 작업: '배분', 담당자: actor, id: item.id,
+        주관과: primary, 협조과: [], 확정방법: '수정' }, org);
+      return item.id;
+    });
+    storage.set('national-assembly-cases-v1', JSON.stringify(localCases));
+    await assert.rejects(localCommon.cancelMany([localIds[0], '없는 문항'], actor, '일괄 재검토', org),
+      error => error.status === 404);
+    assert.deepEqual(JSON.parse(storage.get('national-assembly-cases-v1')), localCases);
+    const localCancelled = await localCommon.cancelMany(localIds, actor, '일괄 재검토', org);
+    assert.equal(localCancelled.cancelled, 2);
+    assert(JSON.parse(storage.get('national-assembly-cases-v1'))
+      .every(item => item.상태 === '접수' && item.log.at(-1).사유 === '일괄 재검토'));
+    checks += 4;
+  } finally {
+    global.location = priorLocation;
+    global.localStorage = priorStorage;
+    delete require.cache[commonPath];
   }
   console.log(`API·상태 규칙 ${checks}개 확인 통과 · 저장 ${store.writes}회 · 문항 ${store.cases.length}건`);
 }
